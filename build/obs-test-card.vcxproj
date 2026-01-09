@@ -87,7 +87,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>D:\antigravity_dev_files\TEST CARD FILES TO COMPILE\dist\windows\source\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /external:I "D:/antigravity_dev_files/obs-src/obs-studio-32.0.4/libobs" /external:I "D:/antigravity_dev_files/obs-sdk/config"</AdditionalOptions>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/obs-studio-source/libobs" /external:I "C:/obs-studio-source/build/config"</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <BufferSecurityCheck></BufferSecurityCheck>
@@ -116,10 +116,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"Debug\";obs_test_card_EXPORTS</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\antigravity_dev_files\TEST CARD FILES TO COMPILE\dist\windows\source\src;D:\antigravity_dev_files\obs-src\obs-studio-32.0.4\libobs;D:\antigravity_dev_files\obs-sdk\config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\antigravity_dev_files\TEST CARD FILES TO COMPILE\dist\windows\source\src;C:\obs-studio-source\libobs;C:\obs-studio-source\build\config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>D:\antigravity_dev_files\TEST CARD FILES TO COMPILE\dist\windows\source\src;D:\antigravity_dev_files\obs-src\obs-studio-32.0.4\libobs;D:\antigravity_dev_files\obs-sdk\config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\antigravity_dev_files\TEST CARD FILES TO COMPILE\dist\windows\source\src;C:\obs-studio-source\libobs;C:\obs-studio-source\build\config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -127,7 +127,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>D:\antigravity_dev_files\obs-sdk\bin\64bit\obs.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>C:\obs-studio-source\build\libobs\Release\obs.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <DataExecutionPrevention></DataExecutionPrevention>
@@ -147,7 +147,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>D:\antigravity_dev_files\TEST CARD FILES TO COMPILE\dist\windows\source\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /external:I "D:/antigravity_dev_files/obs-src/obs-studio-32.0.4/libobs" /external:I "D:/antigravity_dev_files/obs-sdk/config"</AdditionalOptions>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/obs-studio-source/libobs" /external:I "C:/obs-studio-source/build/config"</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <BufferSecurityCheck></BufferSecurityCheck>
@@ -177,10 +177,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"Release\";obs_test_card_EXPORTS</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\antigravity_dev_files\TEST CARD FILES TO COMPILE\dist\windows\source\src;D:\antigravity_dev_files\obs-src\obs-studio-32.0.4\libobs;D:\antigravity_dev_files\obs-sdk\config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\antigravity_dev_files\TEST CARD FILES TO COMPILE\dist\windows\source\src;C:\obs-studio-source\libobs;C:\obs-studio-source\build\config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>D:\antigravity_dev_files\TEST CARD FILES TO COMPILE\dist\windows\source\src;D:\antigravity_dev_files\obs-src\obs-studio-32.0.4\libobs;D:\antigravity_dev_files\obs-sdk\config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\antigravity_dev_files\TEST CARD FILES TO COMPILE\dist\windows\source\src;C:\obs-studio-source\libobs;C:\obs-studio-source\build\config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -188,7 +188,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>D:\antigravity_dev_files\obs-sdk\bin\64bit\obs.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>C:\obs-studio-source\build\libobs\Release\obs.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <DataExecutionPrevention></DataExecutionPrevention>
@@ -208,7 +208,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>D:\antigravity_dev_files\TEST CARD FILES TO COMPILE\dist\windows\source\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /external:I "D:/antigravity_dev_files/obs-src/obs-studio-32.0.4/libobs" /external:I "D:/antigravity_dev_files/obs-sdk/config"</AdditionalOptions>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/obs-studio-source/libobs" /external:I "C:/obs-studio-source/build/config"</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <BufferSecurityCheck></BufferSecurityCheck>
@@ -238,10 +238,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"MinSizeRel\";obs_test_card_EXPORTS</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\antigravity_dev_files\TEST CARD FILES TO COMPILE\dist\windows\source\src;D:\antigravity_dev_files\obs-src\obs-studio-32.0.4\libobs;D:\antigravity_dev_files\obs-sdk\config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\antigravity_dev_files\TEST CARD FILES TO COMPILE\dist\windows\source\src;C:\obs-studio-source\libobs;C:\obs-studio-source\build\config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>D:\antigravity_dev_files\TEST CARD FILES TO COMPILE\dist\windows\source\src;D:\antigravity_dev_files\obs-src\obs-studio-32.0.4\libobs;D:\antigravity_dev_files\obs-sdk\config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\antigravity_dev_files\TEST CARD FILES TO COMPILE\dist\windows\source\src;C:\obs-studio-source\libobs;C:\obs-studio-source\build\config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -249,7 +249,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>D:\antigravity_dev_files\obs-sdk\bin\64bit\obs.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>C:\obs-studio-source\build\libobs\Release\obs.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <DataExecutionPrevention></DataExecutionPrevention>
@@ -269,7 +269,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>D:\antigravity_dev_files\TEST CARD FILES TO COMPILE\dist\windows\source\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /external:I "D:/antigravity_dev_files/obs-src/obs-studio-32.0.4/libobs" /external:I "D:/antigravity_dev_files/obs-sdk/config"</AdditionalOptions>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/obs-studio-source/libobs" /external:I "C:/obs-studio-source/build/config"</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <BufferSecurityCheck></BufferSecurityCheck>
@@ -298,10 +298,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"RelWithDebInfo\";obs_test_card_EXPORTS</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\antigravity_dev_files\TEST CARD FILES TO COMPILE\dist\windows\source\src;D:\antigravity_dev_files\obs-src\obs-studio-32.0.4\libobs;D:\antigravity_dev_files\obs-sdk\config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\antigravity_dev_files\TEST CARD FILES TO COMPILE\dist\windows\source\src;C:\obs-studio-source\libobs;C:\obs-studio-source\build\config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>D:\antigravity_dev_files\TEST CARD FILES TO COMPILE\dist\windows\source\src;D:\antigravity_dev_files\obs-src\obs-studio-32.0.4\libobs;D:\antigravity_dev_files\obs-sdk\config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\antigravity_dev_files\TEST CARD FILES TO COMPILE\dist\windows\source\src;C:\obs-studio-source\libobs;C:\obs-studio-source\build\config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -309,7 +309,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>D:\antigravity_dev_files\obs-sdk\bin\64bit\obs.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>C:\obs-studio-source\build\libobs\Release\obs.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <DataExecutionPrevention></DataExecutionPrevention>

@@ -23,15 +23,17 @@ OBS_DECLARE_MODULE()
 OBS_MODULE_USE_DEFAULT_LOCALE(PLUGIN_NAME, "en-US")
 
 extern struct obs_source_info test_source_info;
+#ifdef ENABLE_QT
+extern void register_test_card_dock(void);
+#endif
 
-bool obs_module_load(void)
-{
-	obs_register_source(&test_source_info);
-	obs_log(LOG_INFO, "plugin loaded successfully (version %s)", PLUGIN_VERSION);
-	return true;
+bool obs_module_load(void) {
+  obs_register_source(&test_source_info);
+#ifdef ENABLE_QT
+  register_test_card_dock();
+#endif
+  obs_log(LOG_INFO, "plugin loaded successfully (version %s)", PLUGIN_VERSION);
+  return true;
 }
 
-void obs_module_unload(void)
-{
-	obs_log(LOG_INFO, "plugin unloaded");
-}
+void obs_module_unload(void) { obs_log(LOG_INFO, "plugin unloaded"); }

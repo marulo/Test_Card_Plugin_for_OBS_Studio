@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 project(obs-test-card VERSION 0.1.0)
 
 # Opciones de compilación
-option(ENABLE_QT "Use Qt functionality" OFF)
+option(ENABLE_QT "Use Qt functionality" ON)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
@@ -56,8 +56,34 @@ target_link_libraries(${PROJECT_NAME} PRIVATE OBS::libobs)
 # Dependencias opcionales de QT
 if(ENABLE_QT)
     find_package(Qt6 COMPONENTS Widgets Core REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Widgets)
+    
+    # Find obs-frontend-api
+    if(DEFINED LIBOBS_FRONTEND_API_LIB)
+        add_library(OBS::frontend-api SHARED IMPORTED)
+        set_target_properties(OBS::frontend-api PROPERTIES
+            IMPORTED_IMPLIB "${LIBOBS_FRONTEND_API_LIB}"
+        )
+        if(DEFINED LIBOBS_FRONTEND_INCLUDE_DIR)
+            set_property(TARGET OBS::frontend-api APPEND PROPERTY 
+                INTERFACE_INCLUDE_DIRECTORIES "${LIBOBS_FRONTEND_INCLUDE_DIR}")
+        endif()
+    else()
+        find_package(obs-frontend-api REQUIRED)
+    endif()
+    
+    # Add dock widget source files
+    target_sources(${PROJECT_NAME} PRIVATE
+        src/test-card-dock.cpp
+        src/test-card-dock-register.cpp
+    )
+    
+    target_link_libraries(${PROJECT_NAME} PRIVATE 
+        Qt6::Core 
+        Qt6::Widgets
+        OBS::frontend-api
+    )
     target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_QT)
+    set(CMAKE_AUTOMOC ON)
 endif()
 
 # Propiedades del target
