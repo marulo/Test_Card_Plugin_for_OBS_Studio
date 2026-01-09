@@ -22,6 +22,7 @@ private slots:
 
 private:
   void createGlobalSource();
+  void checkCurrentState();
   void updateButtonState();
 
   QPushButton *toggleButton;
