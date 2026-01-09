@@ -1,0 +1,3 @@
+D:/antigravity_dev_files/TEST CARD FILES TO COMPILE/dist/windows/source/build/CMakeFiles/obs-test-card.dir
+D:/antigravity_dev_files/TEST CARD FILES TO COMPILE/dist/windows/source/build/CMakeFiles/ALL_BUILD.dir
+D:/antigravity_dev_files/TEST CARD FILES TO COMPILE/dist/windows/source/build/CMakeFiles/ZERO_CHECK.dir

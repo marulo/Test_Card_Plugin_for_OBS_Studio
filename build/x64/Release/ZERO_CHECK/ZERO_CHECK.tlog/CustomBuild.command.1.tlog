@@ -1,0 +1,10 @@
+^D:\ANTIGRAVITY_DEV_FILES\TEST CARD FILES TO COMPILE\DIST\WINDOWS\SOURCE\BUILD\CMAKEFILES\194A1DB5D6471B607BF2B2FEFBDE14ED\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" "-SD:/antigravity_dev_files/TEST CARD FILES TO COMPILE/dist/windows/source" "-BD:/antigravity_dev_files/TEST CARD FILES TO COMPILE/dist/windows/source/build" --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file "D:/antigravity_dev_files/TEST CARD FILES TO COMPILE/dist/windows/source/build/obs-test-card.sln"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
