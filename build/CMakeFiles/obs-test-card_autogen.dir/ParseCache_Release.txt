@@ -201,8 +201,8 @@ D:/antigravity_dev_files/TEST CARD FILES TO COMPILE/dist/windows/source/src/test
  mdp:C:/obs-studio-source/libobs/util/text-lookup.h
  mdp:C:/obs-studio-source/libobs/util/util_uint64.h
  mdp:D:/antigravity_dev_files/TEST CARD FILES TO COMPILE/dist/windows/source/src/test-card-dock.h
-D:/antigravity_dev_files/TEST CARD FILES TO COMPILE/dist/windows/source/src/test-source.c
 D:/antigravity_dev_files/TEST CARD FILES TO COMPILE/dist/windows/source/build/src/plugin-support.c
+D:/antigravity_dev_files/TEST CARD FILES TO COMPILE/dist/windows/source/src/test-source.c
 D:/antigravity_dev_files/TEST CARD FILES TO COMPILE/dist/windows/source/src/plugin-main.c
 D:/antigravity_dev_files/TEST CARD FILES TO COMPILE/dist/windows/source/src/test-card-dock-register.cpp
 D:/antigravity_dev_files/TEST CARD FILES TO COMPILE/dist/windows/source/src/test-card-dock.cpp

@@ -24,6 +24,11 @@ private:
   void createGlobalSource();
   void checkCurrentState();
   void updateButtonState();
+  void addToCurrentScene();
+  void removeFromCurrentScene();
+
+  static void onFrontendEvent(enum obs_frontend_event event,
+                              void *private_data);
 
   QPushButton *toggleButton;
   QPushButton *settingsButton;

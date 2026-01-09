@@ -31,6 +31,9 @@ TestCardDock::TestCardDock(QWidget *parent)
   connect(settingsButton, &QPushButton::clicked, this,
           &TestCardDock::onSettingsClicked);
 
+  // Register frontend event callback for scene changes
+  obs_frontend_add_event_callback(onFrontendEvent, this);
+
   // Create global source
   createGlobalSource();
 
@@ -40,6 +43,9 @@ TestCardDock::TestCardDock(QWidget *parent)
 }
 
 TestCardDock::~TestCardDock() {
+  // Remove callback
+  obs_frontend_remove_event_callback(onFrontendEvent, this);
+
   if (globalSource) {
     obs_source_release(globalSource);
   }
@@ -92,6 +98,16 @@ void TestCardDock::onToggleClicked() {
   isEnabled = toggleButton->isChecked();
   blog(LOG_INFO, "[TestCardDock] Toggle clicked: %s", isEnabled ? "ON" : "OFF");
 
+  if (isEnabled) {
+    addToCurrentScene();
+  } else {
+    removeFromCurrentScene();
+  }
+
+  updateButtonState();
+}
+
+void TestCardDock::addToCurrentScene() {
   obs_source_t *scene = obs_frontend_get_current_scene();
   if (!scene) {
     blog(LOG_ERROR, "[TestCardDock] No current scene");
@@ -105,54 +121,77 @@ void TestCardDock::onToggleClicked() {
     return;
   }
 
-  if (isEnabled) {
-    // Add to current scene
-    obs_sceneitem_t *existing =
-        obs_scene_find_source(obs_scene, obs_source_get_name(globalSource));
+  // Check if already added
+  obs_sceneitem_t *existing =
+      obs_scene_find_source(obs_scene, obs_source_get_name(globalSource));
 
-    if (existing) {
-      blog(LOG_INFO, "[TestCardDock] Test card already in scene");
-    } else {
-      // Add as scene item
-      obs_sceneitem_t *item = obs_scene_add(obs_scene, globalSource);
-      if (item) {
-        blog(LOG_INFO, "[TestCardDock] Added test card to scene");
-
-        // Position at top-left, fullscreen
-        struct vec2 pos = {0, 0};
-        obs_sceneitem_set_pos(item, &pos);
-
-        // Get canvas size for scale
-        obs_video_info ovi;
-        if (obs_get_video_info(&ovi)) {
-          uint32_t source_w = obs_source_get_width(globalSource);
-          uint32_t source_h = obs_source_get_height(globalSource);
-
-          if (source_w > 0 && source_h > 0) {
-            struct vec2 scale;
-            scale.x = (float)ovi.base_width / (float)source_w;
-            scale.y = (float)ovi.base_height / (float)source_h;
-            obs_sceneitem_set_scale(item, &scale);
-          }
-        }
-      } else {
-        blog(LOG_ERROR, "[TestCardDock] Failed to add test card to scene");
-      }
-    }
+  if (existing) {
+    blog(LOG_INFO, "[TestCardDock] Test card already in scene");
   } else {
-    // Remove from current scene
+    // Add as scene item
+    obs_sceneitem_t *item = obs_scene_add(obs_scene, globalSource);
+    if (item) {
+      blog(LOG_INFO, "[TestCardDock] Added test card to scene");
+
+      // Position at top-left, fullscreen
+      struct vec2 pos = {0, 0};
+      obs_sceneitem_set_pos(item, &pos);
+
+      // Get canvas size for scale
+      obs_video_info ovi;
+      if (obs_get_video_info(&ovi)) {
+        uint32_t source_w = obs_source_get_width(globalSource);
+        uint32_t source_h = obs_source_get_height(globalSource);
+
+        if (source_w > 0 && source_h > 0) {
+          struct vec2 scale;
+          scale.x = (float)ovi.base_width / (float)source_w;
+          scale.y = (float)ovi.base_height / (float)source_h;
+          obs_sceneitem_set_scale(item, &scale);
+        }
+      }
+
+      // Move to top of scene
+      obs_sceneitem_set_order(item, OBS_ORDER_MOVE_TOP);
+    } else {
+      blog(LOG_ERROR, "[TestCardDock] Failed to add test card to scene");
+    }
+  }
+
+  obs_source_release(scene);
+}
+
+void TestCardDock::removeFromCurrentScene() {
+  obs_source_t *scene = obs_frontend_get_current_scene();
+  if (!scene) {
+    return;
+  }
+
+  obs_scene_t *obs_scene = obs_scene_from_source(scene);
+  if (obs_scene) {
     obs_sceneitem_t *item =
         obs_scene_find_source(obs_scene, obs_source_get_name(globalSource));
     if (item) {
       obs_sceneitem_remove(item);
       blog(LOG_INFO, "[TestCardDock] Removed test card from scene");
-    } else {
-      blog(LOG_WARNING, "[TestCardDock] Test card not found in scene");
     }
   }
 
   obs_source_release(scene);
-  updateButtonState();
+}
+
+void TestCardDock::onFrontendEvent(enum obs_frontend_event event,
+                                   void *private_data) {
+  TestCardDock *dock = static_cast<TestCardDock *>(private_data);
+
+  if (event == OBS_FRONTEND_EVENT_SCENE_CHANGED) {
+    // When scene changes, auto-add test card if enabled
+    if (dock->isEnabled) {
+      blog(LOG_INFO,
+           "[TestCardDock] Scene changed, adding test card to new scene");
+      dock->addToCurrentScene();
+    }
+  }
 }
 
 void TestCardDock::onSettingsClicked() {
