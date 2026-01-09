@@ -77,6 +77,8 @@ struct test_source_data {
 
   // Grid animation
   int cell_size;
+  uint32_t bg_dark_color;  // Background dark squares color
+  uint32_t bg_light_color; // Background light squares color
   uint32_t *grid_colors;
   int grid_cols;
   int grid_rows;
@@ -317,14 +319,12 @@ static void resize_grid(struct test_source_data *data) {
   data->grid_cell_timers = bzalloc(cols * rows * sizeof(float));
   data->grid_random_targets = bzalloc(cols * rows * sizeof(uint32_t));
 
-  // Initialize checkerboard pattern
-  uint32_t light_gray = 0xFF682f25;
-  uint32_t dark_gray = 0xFF502822;
-
+  // Initialize checkerboard pattern with configurable colors
   for (int y = 0; y < rows; y++) {
     for (int x = 0; x < cols; x++) {
       bool is_light = (x + y) % 2 == 0;
-      data->grid_colors[y * cols + x] = is_light ? light_gray : dark_gray;
+      data->grid_colors[y * cols + x] =
+          is_light ? data->bg_light_color : data->bg_dark_color;
     }
   }
 }
@@ -680,6 +680,12 @@ static void *test_source_create(obs_data_t *settings, obs_source_t *source) {
   if (data->cell_size <= 0)
     data->cell_size = CELL_SIZE;
 
+  // Load background colors (format: 0xRRGGBB, need to add alpha)
+  data->bg_dark_color =
+      0xFF000000 | (uint32_t)obs_data_get_int(settings, "bg_dark_color");
+  data->bg_light_color =
+      0xFF000000 | (uint32_t)obs_data_get_int(settings, "bg_light_color");
+
   // Load font
   if (!load_system_font(data)) {
     blog(LOG_WARNING, "[test_source] Failed to load font, text disabled");
@@ -773,7 +779,14 @@ static void test_source_update(void *data, obs_data_t *settings) {
   src->cell_size = (int)obs_data_get_int(settings, "cell_size");
   if (src->cell_size <= 0)
     src->cell_size = CELL_SIZE;
-  src->dirty |= DIRTY_STATIC;
+
+  // Update background colors
+  src->bg_dark_color =
+      0xFF000000 | (uint32_t)obs_data_get_int(settings, "bg_dark_color");
+  src->bg_light_color =
+      0xFF000000 | (uint32_t)obs_data_get_int(settings, "bg_light_color");
+
+  src->dirty |= DIRTY_STATIC; // Force regeneration with new colors
 }
 
 static void test_source_video_tick(void *data, float seconds) {
@@ -1027,13 +1040,23 @@ static void test_source_video_render(void *data, gs_effect_t *effect) {
 
 static void test_source_get_defaults(obs_data_t *settings) {
   obs_data_set_default_int(settings, "cell_size", CELL_SIZE);
+  obs_data_set_default_int(settings, "bg_dark_color",
+                           0x502822); // Dark brown-red
+  obs_data_set_default_int(settings, "bg_light_color",
+                           0x682f25); // Light brown-red
 }
 
 static obs_properties_t *test_source_get_properties(void *data) {
   UNUSED_PARAMETER(data);
   obs_properties_t *props = obs_properties_create();
+
   obs_properties_add_int(props, "cell_size", "Grid Cell Size (pixels)", 20, 256,
                          1);
+  obs_properties_add_color(props, "bg_dark_color",
+                           "Background Dark Color (RGB)");
+  obs_properties_add_color(props, "bg_light_color",
+                           "Background Light Color (RGB)");
+
   return props;
 }
 
