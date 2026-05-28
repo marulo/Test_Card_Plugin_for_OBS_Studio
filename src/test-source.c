@@ -258,8 +258,8 @@ static void render_text_cached(text_cache_t *cache, const char *text, stbtt_font
 	cache->valid = true;
 }
 
-static void blend_text_to_buffer(uint32_t *buffer, int buf_width, int buf_height, text_cache_t *cache, int x,
-				  int y, uint32_t color)
+static void blend_text_to_buffer(uint32_t *buffer, int buf_width, int buf_height, text_cache_t *cache, int x, int y,
+				 uint32_t color)
 {
 	if (!cache->valid || !cache->bitmap)
 		return;
@@ -358,8 +358,7 @@ static void update_grid_texture(struct test_source_data *data)
 						   NULL, GS_DYNAMIC);
 	}
 
-	gs_texture_set_image(data->tex_grid, (const uint8_t *)data->grid_colors,
-			     (uint32_t)data->grid_cols * 4, false);
+	gs_texture_set_image(data->tex_grid, (const uint8_t *)data->grid_colors, (uint32_t)data->grid_cols * 4, false);
 	obs_leave_graphics();
 	data->dirty &= ~DIRTY_GRID;
 }
@@ -400,8 +399,8 @@ static void render_layer_text(struct test_source_data *data)
 		max_w = data->cache_clock.width;
 
 	int outline = 3;
-	int total_h = data->cache_title.height + padding + data->cache_resolution.height + padding +
-		      data->cache_clock.height;
+	int total_h =
+		data->cache_title.height + padding + data->cache_resolution.height + padding + data->cache_clock.height;
 	int tex_w = max_w + outline * 2;
 	int tex_h = total_h + outline * 2;
 	if (tex_w == 0 || tex_h == 0)
@@ -441,12 +440,12 @@ static void render_layer_text(struct test_source_data *data)
 				continue;
 			if (dx * dx + dy * dy > outline * outline + 1)
 				continue; // Round outline
-			blend_text_to_buffer(data->text_buffer, tex_w, tex_h, &data->cache_title,
-					     title_x + dx, title_y + dy, outline_color);
-			blend_text_to_buffer(data->text_buffer, tex_w, tex_h, &data->cache_resolution,
-					     res_x + dx, res_y + dy, outline_color);
-			blend_text_to_buffer(data->text_buffer, tex_w, tex_h, &data->cache_clock,
-					     clock_x + dx, clock_y + dy, outline_color);
+			blend_text_to_buffer(data->text_buffer, tex_w, tex_h, &data->cache_title, title_x + dx,
+					     title_y + dy, outline_color);
+			blend_text_to_buffer(data->text_buffer, tex_w, tex_h, &data->cache_resolution, res_x + dx,
+					     res_y + dy, outline_color);
+			blend_text_to_buffer(data->text_buffer, tex_w, tex_h, &data->cache_clock, clock_x + dx,
+					     clock_y + dy, outline_color);
 		}
 	}
 
@@ -456,8 +455,7 @@ static void render_layer_text(struct test_source_data *data)
 
 	obs_enter_graphics();
 	if (!data->layer_text) {
-		data->layer_text =
-			gs_texture_create((uint32_t)tex_w, (uint32_t)tex_h, GS_RGBA, 1, NULL, GS_DYNAMIC);
+		data->layer_text = gs_texture_create((uint32_t)tex_w, (uint32_t)tex_h, GS_RGBA, 1, NULL, GS_DYNAMIC);
 	}
 	gs_texture_set_image(data->layer_text, (const uint8_t *)data->text_buffer, (uint32_t)tex_w * 4, false);
 	obs_leave_graphics();
@@ -465,7 +463,7 @@ static void render_layer_text(struct test_source_data *data)
 }
 
 static void draw_solid_rect(gs_effect_t *effect, gs_texture_t *white_tex, float x, float y, float w, float h,
-			     uint32_t color)
+			    uint32_t color)
 {
 	if (!white_tex)
 		return;
@@ -683,8 +681,7 @@ static void test_source_video_tick(void *data, float seconds)
 
 				int r = i / src->grid_cols;
 				int c = i % src->grid_cols;
-				uint32_t base_color =
-					((r + c) % 2 == 0) ? src->bg_light_color : src->bg_dark_color;
+				uint32_t base_color = ((r + c) % 2 == 0) ? src->bg_light_color : src->bg_dark_color;
 
 				float t = src->grid_cell_timers[i] / 2.0f;
 				uint8_t b1 = (base_color >> 16) & 0xFF;
@@ -743,8 +740,7 @@ static void test_source_video_tick(void *data, float seconds)
 				src->width = ovi.base_width;
 				src->height = ovi.base_height;
 				src->dirty |= DIRTY_GRID | DIRTY_TEXT;
-				blog(LOG_INFO, "[test_source] Resolution changed to %dx%d", src->width,
-				     src->height);
+				blog(LOG_INFO, "[test_source] Resolution changed to %dx%d", src->width, src->height);
 			}
 		}
 	}
@@ -824,12 +820,12 @@ static void test_source_video_render(void *data, gs_effect_t *effect)
 
 		float margin_x = (float)src->width * 0.05f;
 		float margin_y = (float)src->height * 0.05f;
-		draw_solid_rect(solid, src->tex_white, margin_x, margin_y, (float)src->width - 2.0f * margin_x,
-				3.0f, border_color);
+		draw_solid_rect(solid, src->tex_white, margin_x, margin_y, (float)src->width - 2.0f * margin_x, 3.0f,
+				border_color);
 		draw_solid_rect(solid, src->tex_white, margin_x, (float)src->height - margin_y - 3.0f,
 				(float)src->width - 2.0f * margin_x, 3.0f, border_color);
-		draw_solid_rect(solid, src->tex_white, margin_x, margin_y, 3.0f,
-				(float)src->height - 2.0f * margin_y, border_color);
+		draw_solid_rect(solid, src->tex_white, margin_x, margin_y, 3.0f, (float)src->height - 2.0f * margin_y,
+				border_color);
 		draw_solid_rect(solid, src->tex_white, (float)src->width - margin_x - 3.0f, margin_y, 3.0f,
 				(float)src->height - 2.0f * margin_y, border_color);
 
@@ -871,8 +867,8 @@ static void test_source_video_render(void *data, gs_effect_t *effect)
 	float rect_hue = fmodf(src->rotation_time / 60.0f, 1.0f) * 360.0f;
 	uint32_t rect_color = hsv_to_rgb(rect_hue, 1.0f, 0.3f);
 	rect_color = (rect_color & 0x00FFFFFF) | 0x80000000;
-	draw_solid_rect(solid, src->tex_white, (float)rect_left, (float)rect_top, (float)rect_width,
-			(float)rect_bottom, rect_color);
+	draw_solid_rect(solid, src->tex_white, (float)rect_left, (float)rect_top, (float)rect_width, (float)rect_bottom,
+			rect_color);
 
 	gs_blend_state_pop();
 
@@ -923,7 +919,8 @@ static void test_source_video_render(void *data, gs_effect_t *effect)
 		float margin_y = (float)src->height * 0.05f;
 
 		float dx = ((float)src->width - target_w) / 2.0f;
-		float dy = (float)src->height - margin_y - 3.0f - target_h - img_padding; // Just above the orange border line
+		float dy = (float)src->height - margin_y - 3.0f - target_h -
+			   img_padding; // Just above the orange border line
 
 		gs_matrix_push();
 		gs_matrix_translate3f(dx, dy, 0.0f);
