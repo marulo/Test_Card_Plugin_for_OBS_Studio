@@ -15,11 +15,23 @@
 #include <string.h>
 #include <time.h>
 
+/* clang-format off */
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcomma"
+#endif
+
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+/* clang-format on */
+
 #include "logo_png.h"
 #include "obs_logo_png.h"
 
