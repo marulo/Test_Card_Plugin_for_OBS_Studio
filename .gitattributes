@@ -1,0 +1,12 @@
+# Set default behavior to automatic text conversion.
+* text=auto
+
+# Force shell/zsh scripts to always use LF line endings on checkout/commit.
+*.sh text eol=lf
+.github/scripts/build-macos text eol=lf
+.github/scripts/build-ubuntu text eol=lf
+.github/scripts/package-macos text eol=lf
+.github/scripts/package-ubuntu text eol=lf
+.github/scripts/.Aptfile text eol=lf
+.github/scripts/.Brewfile text eol=lf
+.github/scripts/utils.zsh/* text eol=lf
