@@ -18,10 +18,14 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+#include "logo_png.h"
+#include "obs_logo_png.h"
+
 #define CELL_SIZE 50
 #define DEFAULT_WIDTH 1920
 #define DEFAULT_HEIGHT 1080
-#define FONT_SIZE_BASE 48
 
 #define ALPHA_MASK 0xFF000000
 
@@ -37,6 +41,7 @@ typedef struct {
   int height;
   int baseline;
   char text[64];
+  int font_size;
   bool valid;
 } text_cache_t;
 
@@ -46,6 +51,7 @@ struct test_source_data {
   gs_texture_t *tex_white;
   gs_texture_t *tex_grid;
   gs_texture_t *logo_tex;
+  gs_texture_t *obs_text_tex;
   gs_texture_t *layer_text;
 
   // Custom Effects
@@ -60,6 +66,7 @@ struct test_source_data {
   text_cache_t cache_title;
   unsigned char *font_data;
   stbtt_fontinfo font;
+  char custom_text[256];
 
   dirty_flags_t dirty;
   time_t last_second;
@@ -146,7 +153,8 @@ static bool load_system_font(struct test_source_data *data) {
 }
 
 static void render_text_cached(text_cache_t *cache, const char *text, stbtt_fontinfo *font, int font_size) {
-  if (cache->valid && strcmp(cache->text, text) == 0) return;
+  if (!text || text[0] == '\0') return; // Guard: nothing to render
+  if (cache->valid && cache->font_size == font_size && strcmp(cache->text, text) == 0) return;
 
   float scale = stbtt_ScaleForPixelHeight(font, (float)font_size);
   int ascent, descent, line_gap;
@@ -154,12 +162,20 @@ static void render_text_cached(text_cache_t *cache, const char *text, stbtt_font
   cache->baseline = (int)(ascent * scale);
 
   int total_width = 0;
+  int current_x = 0;
   for (const char *p = text; *p; p++) {
-    int advance, lsb;
+    int advance, lsb, x0, y0, x1, y1;
     stbtt_GetCodepointHMetrics(font, *p, &advance, &lsb);
-    total_width += (int)(advance * scale);
+    stbtt_GetCodepointBitmapBox(font, *p, scale, scale, &x0, &y0, &x1, &y1);
+    
+    int glyph_w = x1 - x0;
+    int glyph_x = current_x + (int)(lsb * scale);
+    if (glyph_x + glyph_w > total_width) total_width = glyph_x + glyph_w;
+    
+    current_x += (int)(advance * scale);
+    if (current_x > total_width) total_width = current_x;
   }
-
+  
   cache->width = total_width;
   cache->height = font_size + 4;
 
@@ -184,6 +200,8 @@ static void render_text_cached(text_cache_t *cache, const char *text, stbtt_font
     x += (int)(advance * scale);
   }
   strncpy(cache->text, text, sizeof(cache->text) - 1);
+  cache->text[sizeof(cache->text) - 1] = '\0';
+  cache->font_size = font_size;
   cache->valid = true;
 }
 
@@ -288,10 +306,14 @@ static void render_layer_text(struct test_source_data *data) {
   time_t now = time(NULL);
   struct tm *timeinfo = localtime(&now);
   char clock_str[64];
-  sprintf(clock_str, "%02d:%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+  if (timeinfo) {
+    sprintf(clock_str, "%02d:%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+  } else {
+    strcpy(clock_str, "--:--:--");
+  }
   char res_str[64];
   sprintf(res_str, "%dx%d", data->width, data->height);
-  const char *title = "OBS TEST CARD";
+  const char *title = (data->custom_text[0] != '\0') ? data->custom_text : "OBS TEST CARD";
 
   render_text_cached(&data->cache_clock, clock_str, &data->font, font_size);
   render_text_cached(&data->cache_resolution, res_str, &data->font, font_size);
@@ -415,7 +437,7 @@ static void *test_source_create(obs_data_t *settings, obs_source_t *source) {
   data->width = DEFAULT_WIDTH;
   data->height = DEFAULT_HEIGHT;
   data->cell_size = (int)obs_data_get_int(settings, "cell_size");
-  if (data->cell_size <= 0) data->cell_size = CELL_SIZE;
+  if (data->cell_size < 16) data->cell_size = CELL_SIZE;
 
   data->bg_dark_color = 0xFF000000 | (uint32_t)obs_data_get_int(settings, "bg_dark_color");
   data->bg_light_color = 0xFF000000 | (uint32_t)obs_data_get_int(settings, "bg_light_color");
@@ -437,17 +459,21 @@ static void *test_source_create(obs_data_t *settings, obs_source_t *source) {
   tex_data[0] = (const uint8_t *)&white_pixel;
   data->tex_white = gs_texture_create(1, 1, GS_RGBA, 1, tex_data, 0);
 
-  char *path = obs_module_file("logo.png");
-  if (path) {
-    gs_image_file_t image;
-    gs_image_file_init(&image, path);
-    if (image.loaded) {
-      gs_image_file_init_texture(&image);
-      data->logo_tex = image.texture;
-      image.texture = NULL;
-    }
-    gs_image_file_free(&image);
-    bfree(path);
+  int img_w, img_h, img_c;
+  uint8_t *pixels;
+  
+  pixels = stbi_load_from_memory(logo_png, logo_png_len, &img_w, &img_h, &img_c, 4);
+  if (pixels) {
+    const uint8_t *ptr = pixels;
+    data->logo_tex = gs_texture_create(img_w, img_h, GS_RGBA, 1, &ptr, 0);
+    stbi_image_free(pixels);
+  }
+
+  pixels = stbi_load_from_memory(obs_logo_png, obs_logo_png_len, &img_w, &img_h, &img_c, 4);
+  if (pixels) {
+    const uint8_t *ptr = pixels;
+    data->obs_text_tex = gs_texture_create(img_w, img_h, GS_RGBA, 1, &ptr, 0);
+    stbi_image_free(pixels);
   }
   obs_leave_graphics();
 
@@ -480,6 +506,7 @@ static void test_source_destroy(void *data) {
   if (src->layer_text) gs_texture_destroy(src->layer_text);
   if (src->point_effect) gs_effect_destroy(src->point_effect);
   if (src->logo_tex) gs_texture_destroy(src->logo_tex);
+  if (src->obs_text_tex) gs_texture_destroy(src->obs_text_tex);
   obs_leave_graphics();
 
   bfree(data);
@@ -500,10 +527,18 @@ static void test_source_update(void *data, obs_data_t *settings) {
   uint32_t old_light = src->bg_light_color;
 
   src->cell_size = (int)obs_data_get_int(settings, "cell_size");
-  if (src->cell_size <= 0) src->cell_size = CELL_SIZE;
+  if (src->cell_size < 16) src->cell_size = CELL_SIZE;
 
   src->bg_dark_color = ALPHA_MASK | (uint32_t)obs_data_get_int(settings, "bg_dark_color");
   src->bg_light_color = ALPHA_MASK | (uint32_t)obs_data_get_int(settings, "bg_light_color");
+
+  const char *new_text = obs_data_get_string(settings, "custom_text");
+  if (!new_text || new_text[0] == '\0') new_text = "OBS TEST CARD";
+  if (strcmp(src->custom_text, new_text) != 0) {
+    strncpy(src->custom_text, new_text, sizeof(src->custom_text) - 1);
+    src->custom_text[sizeof(src->custom_text) - 1] = '\0';
+    src->dirty |= DIRTY_TEXT;
+  }
 
   if (old_dark != src->bg_dark_color || old_light != src->bg_light_color || old_cell_size != src->cell_size) {
     if (src->grid_colors) {
@@ -558,17 +593,10 @@ static void test_source_video_tick(void *data, float seconds) {
     if (src->grid_timer >= 0.1f) {
       src->grid_timer = 0.0f;
       if (src->grid_cols > 0 && src->grid_rows > 0) {
-        int start_row = 0;
-        int num_rows = 1;
         int half_cols = src->grid_cols / 2;
-
-        if (src->grid_rows >= 2) {
-          start_row = (src->grid_rows / 2) - 1;
-          num_rows = 2;
-        } else {
-          start_row = 0;
-          num_rows = src->grid_rows;
-        }
+        int start_row = src->grid_rows / 2;
+        int num_rows = src->grid_rows - start_row;
+        if (num_rows < 1) num_rows = 1;
 
         if (half_cols > 0) {
           int r_col = rand() % half_cols;
@@ -687,7 +715,8 @@ static void test_source_video_render(void *data, gs_effect_t *effect) {
       draw_solid_rect(solid, src->tex_white, 0, h_y, src->width, 2, white);
       
       float v_val = src->v_scan_time;
-      float v_factor = (20.0f - v_val) / 20.0f;
+      if (v_val > 10.0f) v_val = 20.0f - v_val;
+      float v_factor = v_val / 10.0f;
       int v_x = (int)(v_factor * src->width);
       draw_solid_rect(solid, src->tex_white, v_x, 0, 2, src->height, white);
   }
@@ -752,6 +781,32 @@ static void test_source_video_render(void *data, gs_effect_t *effect) {
       gs_matrix_pop();
   }
 
+  // Second Logo (OBS_LOGO.png)
+  if (src->obs_text_tex) {
+      uint32_t t_w = gs_texture_get_width(src->obs_text_tex);
+      uint32_t t_h = gs_texture_get_height(src->obs_text_tex);
+      
+      float target_w = min_dim * 0.5f; // Match spinning logo width
+      float scale = target_w / t_w;
+      float target_h = t_h * scale;
+      
+      float padding = min_dim * 0.01f;
+      float margin_y = src->height * 0.05f;
+      
+      float dx = (src->width - target_w) / 2.0f;
+      float dy = src->height - margin_y - 3.0f - target_h - padding; // Just above the orange border line
+      
+      gs_matrix_push();
+      gs_matrix_translate3f(dx, dy, 0.0f);
+      
+      gs_effect_set_texture(gs_effect_get_param_by_name(default_effect, "image"), src->obs_text_tex);
+      gs_technique_begin_pass(tech_def, 0);
+      gs_draw_sprite(src->obs_text_tex, 0, (uint32_t)target_w, (uint32_t)target_h);
+      gs_technique_end_pass(tech_def);
+      
+      gs_matrix_pop();
+  }
+
   // Text
   if (src->layer_text) {
       float logo_h = min_dim * 0.5f;
@@ -783,15 +838,20 @@ static void test_source_get_defaults(obs_data_t *settings) {
   obs_data_set_default_int(settings, "cell_size", CELL_SIZE);
   obs_data_set_default_int(settings, "bg_dark_color", 0x502822);
   obs_data_set_default_int(settings, "bg_light_color", 0x682f25);
+  obs_data_set_default_string(settings, "custom_text", "OBS TEST CARD");
 }
 
 static obs_properties_t *test_source_get_properties(void *data) {
   UNUSED_PARAMETER(data);
   obs_properties_t *props = obs_properties_create();
 
-  obs_properties_add_int(props, "cell_size", obs_module_text("TestCard.GridSize"), 20, 256, 1);
+  obs_properties_add_int(props, "cell_size", obs_module_text("TestCard.GridSize"), 16, 256, 1);
   obs_properties_add_color(props, "bg_dark_color", obs_module_text("TestCard.BgDarkColor"));
   obs_properties_add_color(props, "bg_light_color", obs_module_text("TestCard.BgLightColor"));
+
+  obs_properties_add_text(props, "custom_text", obs_module_text("TestCard.CustomText"), OBS_TEXT_DEFAULT);
+
+  obs_properties_add_text(props, "version_info", "OBS Test Card V. 0.1.0 by Marulo", OBS_TEXT_INFO);
 
   return props;
 }
