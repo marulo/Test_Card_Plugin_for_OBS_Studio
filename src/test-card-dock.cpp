@@ -242,6 +242,33 @@ void TestCardDock::onFrontendEvent(enum obs_frontend_event event, void *private_
 			dock->addToCurrentScene();
 		}
 	}
+
+	if (event == OBS_FRONTEND_EVENT_FINISHED_LOADING) {
+		// OBS has finished loading the scene collection.
+		// Apply the saved config text NOW, overriding whatever the scene
+		// collection may have restored (which defaults to "OBS TEST CARD").
+		if (!dock->globalSource)
+			return;
+
+		char *config_path = obs_module_get_config_path(obs_current_module(), "obs-test-card.json");
+		if (!config_path)
+			return;
+
+		obs_data_t *data = obs_data_create_from_json_file(config_path);
+		bfree(config_path);
+		if (!data)
+			return;
+
+		const char *saved_text = obs_data_get_string(data, "custom_text");
+		if (saved_text && *saved_text) {
+			obs_data_t *src_settings = obs_source_get_settings(dock->globalSource);
+			obs_data_set_string(src_settings, "custom_text", saved_text);
+			obs_source_update(dock->globalSource, src_settings);
+			obs_data_release(src_settings);
+			blog(LOG_INFO, "[TestCardDock] Restored saved text after scene collection load");
+		}
+		obs_data_release(data);
+	}
 }
 
 void TestCardDock::onSettingsClicked()
