@@ -649,10 +649,21 @@ static void test_source_update(void *data, obs_data_t *settings)
 		strncpy(src->custom_text, new_text, sizeof(src->custom_text) - 1);
 		src->custom_text[sizeof(src->custom_text) - 1] = '\0';
 		src->dirty |= DIRTY_TEXT;
+	}
 
+	if (old_dark != src->bg_dark_color || old_light != src->bg_light_color || old_cell_size != src->cell_size) {
+		if (src->grid_colors) {
+			bfree(src->grid_colors);
+			src->grid_colors = NULL;
+		}
+		src->dirty |= DIRTY_GRID;
+	}
+
+	/* Save all settings whenever anything changed */
+	if (src->dirty || old_dark != src->bg_dark_color || old_light != src->bg_light_color ||
+	    old_cell_size != src->cell_size) {
 		char *config_path = obs_module_get_config_path(obs_current_module(), "obs-test-card.json");
 		if (config_path) {
-			/* Ensure the plugin config directory exists before saving */
 			char *dir = bstrdup(config_path);
 			char *sep = strrchr(dir, '/');
 			if (!sep)
@@ -663,20 +674,15 @@ static void test_source_update(void *data, obs_data_t *settings)
 			}
 			bfree(dir);
 
-			obs_data_t *data = obs_data_create();
-			obs_data_set_string(data, "custom_text", src->custom_text);
-			obs_data_save_json_safe(data, config_path, "tmp", "bak");
-			obs_data_release(data);
+			obs_data_t *save_data = obs_data_create();
+			obs_data_set_string(save_data, "custom_text", src->custom_text);
+			obs_data_set_int(save_data, "cell_size", src->cell_size);
+			obs_data_set_int(save_data, "bg_dark_color", (int64_t)(src->bg_dark_color & ~ALPHA_MASK));
+			obs_data_set_int(save_data, "bg_light_color", (int64_t)(src->bg_light_color & ~ALPHA_MASK));
+			obs_data_save_json_safe(save_data, config_path, "tmp", "bak");
+			obs_data_release(save_data);
 			bfree(config_path);
 		}
-	}
-
-	if (old_dark != src->bg_dark_color || old_light != src->bg_light_color || old_cell_size != src->cell_size) {
-		if (src->grid_colors) {
-			bfree(src->grid_colors);
-			src->grid_colors = NULL;
-		}
-		src->dirty |= DIRTY_GRID;
 	}
 }
 
@@ -694,13 +700,47 @@ static void test_source_video_tick(void *data, float seconds)
 			obs_data_t *d = obs_data_create_from_json_file(cfg);
 			bfree(cfg);
 			if (d) {
-				const char *saved = obs_data_get_string(d, "custom_text");
-				if (saved && *saved && strcmp(src->custom_text, saved) != 0) {
-					strncpy(src->custom_text, saved, sizeof(src->custom_text) - 1);
+				/* Restore custom text */
+				const char *saved_text = obs_data_get_string(d, "custom_text");
+				if (saved_text && *saved_text && strcmp(src->custom_text, saved_text) != 0) {
+					strncpy(src->custom_text, saved_text, sizeof(src->custom_text) - 1);
 					src->custom_text[sizeof(src->custom_text) - 1] = '\0';
 					src->dirty |= DIRTY_TEXT;
-					blog(LOG_INFO, "[test_source] Loaded saved text from config");
 				}
+
+				/* Restore cell size */
+				int64_t saved_cell = obs_data_get_int(d, "cell_size");
+				if (saved_cell >= 16 && saved_cell != src->cell_size) {
+					src->cell_size = (int)saved_cell;
+					if (src->grid_colors) {
+						bfree(src->grid_colors);
+						src->grid_colors = NULL;
+					}
+					src->dirty |= DIRTY_GRID;
+				}
+
+				/* Restore colors */
+				int64_t saved_dark = obs_data_get_int(d, "bg_dark_color");
+				int64_t saved_light = obs_data_get_int(d, "bg_light_color");
+				uint32_t new_dark = ALPHA_MASK | (uint32_t)saved_dark;
+				uint32_t new_light = ALPHA_MASK | (uint32_t)saved_light;
+				if (saved_dark != 0 && new_dark != src->bg_dark_color) {
+					src->bg_dark_color = new_dark;
+					if (src->grid_colors) {
+						bfree(src->grid_colors);
+						src->grid_colors = NULL;
+					}
+					src->dirty |= DIRTY_GRID;
+				}
+				if (saved_light != 0 && new_light != src->bg_light_color) {
+					src->bg_light_color = new_light;
+					if (src->grid_colors) {
+						bfree(src->grid_colors);
+						src->grid_colors = NULL;
+					}
+					src->dirty |= DIRTY_GRID;
+				}
+
 				obs_data_release(d);
 			}
 		}
@@ -1024,7 +1064,7 @@ static obs_properties_t *test_source_get_properties(void *data)
 
 	obs_properties_add_text(props, "custom_text", obs_module_text("TestCard.CustomText"), OBS_TEXT_DEFAULT);
 
-	obs_properties_add_text(props, "version_info", "OBS Test Card V. 0.2.5 by Marulo", OBS_TEXT_INFO);
+	obs_properties_add_text(props, "version_info", "OBS Test Card V. 0.2.6 by Marulo", OBS_TEXT_INFO);
 
 	return props;
 }
