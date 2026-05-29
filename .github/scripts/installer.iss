@@ -13,6 +13,7 @@ AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 ; The default installation directory for OBS Studio plugins
+ArchitecturesInstallIn64BitMode=x64
 DefaultDirName={autopf}\obs-studio
 DirExistsWarning=no
 DisableProgramGroupPage=yes
