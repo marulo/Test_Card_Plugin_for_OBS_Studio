@@ -79,6 +79,7 @@ struct test_source_data {
 	unsigned char *font_data;
 	stbtt_fontinfo font;
 	char custom_text[256];
+	bool config_loaded;
 
 	dirty_flags_t dirty;
 	time_t last_second;
@@ -670,6 +671,28 @@ static void test_source_update(void *data, obs_data_t *settings)
 static void test_source_video_tick(void *data, float seconds)
 {
 	struct test_source_data *src = data;
+
+	/* One-shot: apply saved custom text on the first tick after OBS has fully
+	 * loaded the scene collection. This runs on the video thread so there is
+	 * no race with the deferred-update mechanism. */
+	if (!src->config_loaded) {
+		src->config_loaded = true;
+		char *cfg = obs_module_get_config_path(obs_current_module(), "obs-test-card.json");
+		if (cfg) {
+			obs_data_t *d = obs_data_create_from_json_file(cfg);
+			bfree(cfg);
+			if (d) {
+				const char *saved = obs_data_get_string(d, "custom_text");
+				if (saved && *saved && strcmp(src->custom_text, saved) != 0) {
+					strncpy(src->custom_text, saved, sizeof(src->custom_text) - 1);
+					src->custom_text[sizeof(src->custom_text) - 1] = '\0';
+					src->dirty |= DIRTY_TEXT;
+					blog(LOG_INFO, "[test_source] Loaded saved text from config");
+				}
+				obs_data_release(d);
+			}
+		}
+	}
 
 	src->rotation_time += seconds;
 	src->h_scan_time += seconds;
