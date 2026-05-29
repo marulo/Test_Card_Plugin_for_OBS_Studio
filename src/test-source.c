@@ -703,12 +703,15 @@ static void test_source_video_tick(void *data, float seconds)
 			obs_data_t *d = obs_data_create_from_json_file(cfg);
 			bfree(cfg);
 			if (d) {
+				bool changed = false;
+
 				/* Restore custom text */
 				const char *saved_text = obs_data_get_string(d, "custom_text");
 				if (saved_text && *saved_text && strcmp(src->custom_text, saved_text) != 0) {
 					strncpy(src->custom_text, saved_text, sizeof(src->custom_text) - 1);
 					src->custom_text[sizeof(src->custom_text) - 1] = '\0';
 					src->dirty |= DIRTY_TEXT;
+					changed = true;
 				}
 
 				/* Restore cell size */
@@ -720,6 +723,7 @@ static void test_source_video_tick(void *data, float seconds)
 						src->grid_colors = NULL;
 					}
 					src->dirty |= DIRTY_GRID;
+					changed = true;
 				}
 
 				/* Restore colors */
@@ -734,6 +738,7 @@ static void test_source_video_tick(void *data, float seconds)
 						src->grid_colors = NULL;
 					}
 					src->dirty |= DIRTY_GRID;
+					changed = true;
 				}
 				if (saved_light != 0 && new_light != src->bg_light_color) {
 					src->bg_light_color = new_light;
@@ -742,6 +747,22 @@ static void test_source_video_tick(void *data, float seconds)
 						src->grid_colors = NULL;
 					}
 					src->dirty |= DIRTY_GRID;
+					changed = true;
+				}
+
+				/* Sync restored values into the OBS settings object so
+				 * the properties panel shows the correct values. */
+				if (changed) {
+					obs_data_t *s = obs_source_get_settings(src->source);
+					if (s) {
+						obs_data_set_string(s, "custom_text", src->custom_text);
+						obs_data_set_int(s, "cell_size", src->cell_size);
+						obs_data_set_int(s, "bg_dark_color",
+								 (int64_t)(src->bg_dark_color & ~ALPHA_MASK));
+						obs_data_set_int(s, "bg_light_color",
+								 (int64_t)(src->bg_light_color & ~ALPHA_MASK));
+						obs_data_release(s);
+					}
 				}
 
 				obs_data_release(d);
@@ -1067,7 +1088,7 @@ static obs_properties_t *test_source_get_properties(void *data)
 
 	obs_properties_add_text(props, "custom_text", obs_module_text("TestCard.CustomText"), OBS_TEXT_DEFAULT);
 
-	obs_properties_add_text(props, "version_info", "OBS Test Card V. 0.2.7 by Marulo", OBS_TEXT_INFO);
+	obs_properties_add_text(props, "version_info", "OBS Test Card V. 0.2.8 by Marulo", OBS_TEXT_INFO);
 
 	return props;
 }
