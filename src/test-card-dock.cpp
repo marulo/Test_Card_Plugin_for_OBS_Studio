@@ -78,6 +78,23 @@ void TestCardDock::createGlobalSource()
 		blog(LOG_INFO, "[TestCardDock] Created new test card source");
 	} else {
 		blog(LOG_INFO, "[TestCardDock] Found existing test card source");
+
+		// Apply saved text to existing source too
+		char *config_path = obs_module_get_config_path(obs_current_module(), "obs-test-card.json");
+		if (config_path) {
+			obs_data_t *data = obs_data_create_from_json_file(config_path);
+			if (data) {
+				const char *saved_text = obs_data_get_string(data, "custom_text");
+				if (saved_text && *saved_text) {
+					obs_data_t *src_settings = obs_source_get_settings(globalSource);
+					obs_data_set_string(src_settings, "custom_text", saved_text);
+					obs_source_update(globalSource, src_settings);
+					obs_data_release(src_settings);
+				}
+				obs_data_release(data);
+			}
+			bfree(config_path);
+		}
 	}
 }
 
