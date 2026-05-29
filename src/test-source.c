@@ -3,7 +3,6 @@
 
 #include <graphics/effect.h>
 #include <graphics/graphics.h>
-#include <graphics/image-file.h>
 #include <graphics/matrix4.h>
 #include <obs-module.h>
 #include <util/bmem.h>
@@ -1088,7 +1087,7 @@ static obs_properties_t *test_source_get_properties(void *data)
 
 	obs_properties_add_text(props, "custom_text", obs_module_text("TestCard.CustomText"), OBS_TEXT_DEFAULT);
 
-	obs_properties_add_text(props, "version_info", "OBS Test Card V. 0.2.8 by Marulo", OBS_TEXT_INFO);
+	obs_properties_add_text(props, "version_info", "OBS Test Card V. 0.2.9 by Marulo", OBS_TEXT_INFO);
 
 	return props;
 }
