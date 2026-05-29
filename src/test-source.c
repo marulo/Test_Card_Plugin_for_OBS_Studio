@@ -1087,7 +1087,7 @@ static obs_properties_t *test_source_get_properties(void *data)
 
 	obs_properties_add_text(props, "custom_text", obs_module_text("TestCard.CustomText"), OBS_TEXT_DEFAULT);
 
-	obs_properties_add_text(props, "version_info", "OBS Test Card V. 0.4.0 by Marulo", OBS_TEXT_INFO);
+	obs_properties_add_text(props, "version_info", "OBS Test Card V. 0.4.1 by Marulo", OBS_TEXT_INFO);
 
 	return props;
 }
