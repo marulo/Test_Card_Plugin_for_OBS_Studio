@@ -45,49 +45,36 @@ static void inject_into_scene(obs_source_t *scene_source, obs_source_t *target_s
 		return;
 	obs_scene_t *scene = obs_scene_from_source(scene_source);
 	if (!scene) {
-		blog(LOG_INFO, "[TestCardDock] inject_into_scene: Failed because scene_source is not a scene! (ID: %s)",
-		     obs_source_get_id(scene_source));
+		blog(LOG_INFO, "%s", "[TestCardDock] inject_into_scene: Failed because scene_source is not a scene!");
 		return;
 	}
 
-	// Check if already in the scene
-	bool found = false;
+	obs_sceneitem_t *found_item = nullptr;
 	auto check_cb = [](obs_scene_t *, obs_sceneitem_t *item, void *param) -> bool {
 		obs_source_t *item_src = obs_sceneitem_get_source(item);
 		if (item_src && strcmp(obs_source_get_id(item_src), "test_source") == 0) {
-			*(bool *)param = true;
+			*(obs_sceneitem_t **)param = item;
 			return false; // stop iterating
 		}
 		return true;
 	};
-	obs_scene_enum_items(scene, check_cb, &found);
+	obs_scene_enum_items(scene, check_cb, &found_item);
 
-	if (!found) {
+	if (!found_item) {
 		obs_sceneitem_t *item = obs_scene_add(scene, target_source);
 		if (item) {
 			obs_sceneitem_set_order(item, OBS_ORDER_MOVE_TOP);
-			blog(LOG_INFO, "[TestCardDock] inject_into_scene: Added to %s",
-			     obs_source_get_name(scene_source));
+			blog(LOG_INFO, "%s", "[TestCardDock] inject_into_scene: Added to scene");
 		} else {
-			blog(LOG_INFO, "[TestCardDock] inject_into_scene: Failed to add to %s",
-			     obs_source_get_name(scene_source));
+			blog(LOG_INFO, "%s", "[TestCardDock] inject_into_scene: Failed to add to scene");
 		}
 	} else {
-		blog(LOG_INFO, "[TestCardDock] inject_into_scene: Already exists in %s",
-		     obs_source_get_name(scene_source));
+		blog(LOG_INFO, "%s", "[TestCardDock] inject_into_scene: Already exists in scene");
 
-		// fallback check by enumerating and forcing visibility
-		auto force_vis_cb = [](obs_scene_t *, obs_sceneitem_t *item, void *) -> bool {
-			obs_source_t *item_src = obs_sceneitem_get_source(item);
-			if (item_src && strcmp(obs_source_get_id(item_src), "test_source") == 0) {
-				obs_sceneitem_set_visible(item, true);
-				obs_sceneitem_set_order(item, OBS_ORDER_MOVE_TOP);
-			}
-			return true;
-		};
-		obs_scene_enum_items(scene, force_vis_cb, nullptr);
-		blog(LOG_INFO, "[TestCardDock] inject_into_scene: Forced visibility via enumeration in %s",
-		     obs_source_get_name(scene_source));
+		// Modify visibility and order OUTSIDE of the enumeration callback to prevent deadlocks
+		obs_sceneitem_set_visible(found_item, true);
+		obs_sceneitem_set_order(found_item, OBS_ORDER_MOVE_TOP);
+		blog(LOG_INFO, "%s", "[TestCardDock] inject_into_scene: Forced visibility outside enumeration");
 	}
 }
 
