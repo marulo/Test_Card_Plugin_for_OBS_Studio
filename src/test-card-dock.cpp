@@ -1,13 +1,105 @@
 #include "test-card-dock.h"
 #include <QHBoxLayout>
-#include <QStyle>
+#include <QMessageBox>
 #include <obs-module.h>
+#include <graphics/graphics.h>
+
+// ---------------------------------------------------------------------------
+// Aggressive Cleanup Helper (Exterminates by ID)
+// ---------------------------------------------------------------------------
+static bool remove_stale_items_callback(obs_scene_t *scene, obs_sceneitem_t *item, void *param)
+{
+	bool *found_any = (bool *)param;
+	obs_source_t *item_source = obs_sceneitem_get_source(item);
+
+	if (item_source && strcmp(obs_source_get_id(item_source), "test_source") == 0) {
+		obs_sceneitem_remove(item);
+		if (found_any)
+			*found_any = true;
+	}
+
+	if (obs_sceneitem_is_group(item)) {
+		obs_scene_t *group_scene = obs_sceneitem_group_get_scene(item);
+		if (group_scene) {
+			obs_scene_enum_items(group_scene, remove_stale_items_callback, param);
+		}
+	}
+
+	return true;
+}
+
+static bool cleanup_all_sources_callback(void *param, obs_source_t *source)
+{
+	obs_scene_t *scene = obs_scene_from_source(source);
+	if (scene) {
+		obs_scene_enum_items(scene, remove_stale_items_callback, param);
+	}
+	return true;
+}
+
+// ---------------------------------------------------------------------------
+// Scene Injector
+// ---------------------------------------------------------------------------
+static void inject_into_scene(obs_source_t *scene_source, obs_source_t *target_source)
+{
+	if (!scene_source || !target_source)
+		return;
+	obs_scene_t *scene = obs_scene_from_source(scene_source);
+	if (!scene) {
+		blog(LOG_INFO, "[TestCardDock] inject_into_scene: Failed because scene_source is not a scene! (ID: %s)",
+		     obs_source_get_id(scene_source));
+		return;
+	}
+
+	// Check if already in the scene
+	bool found = false;
+	auto check_cb = [](obs_scene_t *, obs_sceneitem_t *item, void *param) -> bool {
+		obs_source_t *item_src = obs_sceneitem_get_source(item);
+		if (item_src && strcmp(obs_source_get_id(item_src), "test_source") == 0) {
+			*(bool *)param = true;
+			return false; // stop iterating
+		}
+		return true;
+	};
+	obs_scene_enum_items(scene, check_cb, &found);
+
+	if (!found) {
+		obs_sceneitem_t *item = obs_scene_add(scene, target_source);
+		if (item) {
+			obs_sceneitem_set_order(item, OBS_ORDER_MOVE_TOP);
+			blog(LOG_INFO, "[TestCardDock] inject_into_scene: Added to %s",
+			     obs_source_get_name(scene_source));
+		} else {
+			blog(LOG_INFO, "[TestCardDock] inject_into_scene: Failed to add to %s",
+			     obs_source_get_name(scene_source));
+		}
+	} else {
+		blog(LOG_INFO, "[TestCardDock] inject_into_scene: Already exists in %s",
+		     obs_source_get_name(scene_source));
+
+		// fallback check by enumerating and forcing visibility
+		auto force_vis_cb = [](obs_scene_t *, obs_sceneitem_t *item, void *) -> bool {
+			obs_source_t *item_src = obs_sceneitem_get_source(item);
+			if (item_src && strcmp(obs_source_get_id(item_src), "test_source") == 0) {
+				obs_sceneitem_set_visible(item, true);
+				obs_sceneitem_set_order(item, OBS_ORDER_MOVE_TOP);
+			}
+			return true;
+		};
+		obs_scene_enum_items(scene, force_vis_cb, nullptr);
+		blog(LOG_INFO, "[TestCardDock] inject_into_scene: Forced visibility via enumeration in %s",
+		     obs_source_get_name(scene_source));
+	}
+}
+
+// ---------------------------------------------------------------------------
+// TestCardDock
+// ---------------------------------------------------------------------------
 
 TestCardDock::TestCardDock(QWidget *parent) : QDialog(parent), globalSource(nullptr), isEnabled(false)
 {
 	setWindowTitle("Test Card Control");
 
-	// Create buttons
 	toggleButton = new QPushButton("TEST CARD", this);
 	toggleButton->setCheckable(true);
 	toggleButton->setMinimumWidth(120);
@@ -15,275 +107,232 @@ TestCardDock::TestCardDock(QWidget *parent) : QDialog(parent), globalSource(null
 	settingsButton = new QPushButton("⚙ Config", this);
 	settingsButton->setToolTip("Settings");
 
-	// Create layout
 	QHBoxLayout *layout = new QHBoxLayout(this);
 	layout->setContentsMargins(4, 4, 4, 4);
 	layout->setSpacing(4);
 	layout->addWidget(toggleButton);
 	layout->addWidget(settingsButton);
 	layout->addStretch();
-
 	setLayout(layout);
 
-	// Connect signals
 	connect(toggleButton, &QPushButton::clicked, this, &TestCardDock::onToggleClicked);
 	connect(settingsButton, &QPushButton::clicked, this, &TestCardDock::onSettingsClicked);
 
-	// Register frontend event callback for scene changes
 	obs_frontend_add_event_callback(onFrontendEvent, this);
-
-	// Create global source
 	createGlobalSource();
-
-	// Check initial state
-	checkCurrentState();
 	updateButtonState();
 }
 
 TestCardDock::~TestCardDock()
 {
-	// Remove callback
 	obs_frontend_remove_event_callback(onFrontendEvent, this);
+
+	if (isEnabled && globalSource) {
+		obs_source_set_enabled(globalSource, false);
+		isEnabled = false;
+	}
 
 	if (globalSource) {
 		obs_source_release(globalSource);
+		globalSource = nullptr;
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Source lifecycle
+// ---------------------------------------------------------------------------
 
 void TestCardDock::createGlobalSource()
 {
-	// Check if source already exists
 	globalSource = obs_get_source_by_name("__Test_Card_Global__");
 
 	if (!globalSource) {
-		// Create new source with correct ID
 		obs_data_t *settings = obs_data_create();
-
-		char *config_path = obs_module_get_config_path(obs_current_module(), "obs-test-card.json");
-		if (config_path) {
-			obs_data_t *data = obs_data_create_from_json_file(config_path);
-			if (data) {
-				const char *saved_text = obs_data_get_string(data, "custom_text");
-				if (saved_text && *saved_text) {
-					obs_data_set_string(settings, "custom_text", saved_text);
-				}
-				obs_data_release(data);
-			}
-			bfree(config_path);
-		}
-
 		globalSource = obs_source_create("test_source", "__Test_Card_Global__", settings, nullptr);
 		obs_data_release(settings);
+	}
 
-		blog(LOG_INFO, "[TestCardDock] Created new test card source");
-	} else {
-		blog(LOG_INFO, "[TestCardDock] Found existing test card source");
-
-		// Apply saved text to existing source too
-		char *config_path = obs_module_get_config_path(obs_current_module(), "obs-test-card.json");
-		if (config_path) {
-			obs_data_t *data = obs_data_create_from_json_file(config_path);
-			if (data) {
-				const char *saved_text = obs_data_get_string(data, "custom_text");
-				if (saved_text && *saved_text) {
-					obs_data_t *src_settings = obs_source_get_settings(globalSource);
-					obs_data_set_string(src_settings, "custom_text", saved_text);
-					obs_source_update(globalSource, src_settings);
-					obs_data_release(src_settings);
-				}
-				obs_data_release(data);
-			}
-			bfree(config_path);
-		}
+	// Ensure it starts disabled
+	if (globalSource && !isEnabled) {
+		obs_source_set_enabled(globalSource, false);
 	}
 }
 
-void TestCardDock::checkCurrentState()
-{
-	// Check if test card is already in current scene
-	obs_source_t *scene = obs_frontend_get_current_scene();
-	if (scene && globalSource) {
-		obs_scene_t *obs_scene = obs_scene_from_source(scene);
-		if (obs_scene) {
-			obs_sceneitem_t *item = obs_scene_find_source(obs_scene, obs_source_get_name(globalSource));
-			isEnabled = (item != nullptr);
-			toggleButton->setChecked(isEnabled);
+// ---------------------------------------------------------------------------
+// Overlay Activation
+// ---------------------------------------------------------------------------
 
-			blog(LOG_INFO, "[TestCardDock] Initial state: %s", isEnabled ? "ON" : "OFF");
-		}
-		obs_source_release(scene);
-	}
-}
-
-void TestCardDock::onToggleClicked()
+void TestCardDock::activateTestCard()
 {
 	if (!globalSource) {
 		createGlobalSource();
-		if (!globalSource) {
-			blog(LOG_ERROR, "[TestCardDock] Failed to create source");
+		if (!globalSource)
 			return;
-		}
 	}
 
-	isEnabled = toggleButton->isChecked();
-	blog(LOG_INFO, "[TestCardDock] Toggle clicked: %s", isEnabled ? "ON" : "OFF");
+	obs_source_set_enabled(globalSource, true);
 
-	if (isEnabled) {
-		addToCurrentScene();
-	} else {
-		removeFromAllScenes();
-	}
+	QString debugInfo = "DEBUG INFO V0.4.7\n\n";
 
-	updateButtonState();
-}
-
-void TestCardDock::addToCurrentScene()
-{
-	obs_source_t *scene = obs_frontend_get_current_scene();
-	if (!scene) {
-		blog(LOG_ERROR, "[TestCardDock] No current scene");
-		return;
-	}
-
-	obs_scene_t *obs_scene = obs_scene_from_source(scene);
-	if (!obs_scene) {
-		blog(LOG_ERROR, "[TestCardDock] Could not get obs_scene");
-		obs_source_release(scene);
-		return;
-	}
-
-	// Check if already added
-	obs_sceneitem_t *existing = obs_scene_find_source(obs_scene, obs_source_get_name(globalSource));
-
-	if (existing) {
-		blog(LOG_INFO, "[TestCardDock] Test card already in scene");
-	} else {
-		// Add as scene item
-		obs_sceneitem_t *item = obs_scene_add(obs_scene, globalSource);
-		if (item) {
-			blog(LOG_INFO, "[TestCardDock] Added test card to scene");
-
-			// Position at top-left, fullscreen
-			struct vec2 pos = {0, 0};
-			obs_sceneitem_set_pos(item, &pos);
-
-			// Get canvas size for scale
-			obs_video_info ovi;
-			if (obs_get_video_info(&ovi)) {
-				uint32_t source_w = obs_source_get_width(globalSource);
-				uint32_t source_h = obs_source_get_height(globalSource);
-
-				if (source_w > 0 && source_h > 0) {
-					struct vec2 scale;
-					scale.x = (float)ovi.base_width / (float)source_w;
-					scale.y = (float)ovi.base_height / (float)source_h;
-					obs_sceneitem_set_scale(item, &scale);
-				}
+	obs_source_t *program_scene = obs_frontend_get_current_scene();
+	if (program_scene) {
+		blog(LOG_INFO, "[TestCardDock] Program scene name: %s", obs_source_get_name(program_scene));
+		debugInfo += QString("Program Scene: %1\n").arg(obs_source_get_name(program_scene));
+		obs_scene_t *ps = obs_scene_from_source(program_scene);
+		if (ps) {
+			obs_sceneitem_t *item = obs_scene_add(ps, globalSource);
+			if (item) {
+				obs_sceneitem_set_order(item, OBS_ORDER_MOVE_TOP);
+				obs_sceneitem_set_visible(item, true);
+				debugInfo += "  -> Successfully added to Program Scene!\n";
+			} else {
+				debugInfo += "  -> FAILED to add to Program Scene (obs_scene_add returned null)\n";
 			}
-
-			// Move to top of scene
-			obs_sceneitem_set_order(item, OBS_ORDER_MOVE_TOP);
 		} else {
-			blog(LOG_ERROR, "[TestCardDock] Failed to add test card to scene");
+			debugInfo += "  -> FAILED: Program source is not a valid scene\n";
 		}
+		obs_source_release(program_scene);
+	} else {
+		debugInfo += "Program Scene is NULL!\n";
 	}
 
-	obs_source_release(scene);
+	obs_source_t *preview_scene = obs_frontend_get_current_preview_scene();
+	if (preview_scene) {
+		debugInfo += QString("\nPreview Scene: %1\n").arg(obs_source_get_name(preview_scene));
+		obs_scene_t *pvs = obs_scene_from_source(preview_scene);
+		if (pvs) {
+			obs_sceneitem_t *item = obs_scene_add(pvs, globalSource);
+			if (item) {
+				obs_sceneitem_set_order(item, OBS_ORDER_MOVE_TOP);
+				obs_sceneitem_set_visible(item, true);
+				debugInfo += "  -> Successfully added to Preview Scene!\n";
+			} else {
+				debugInfo += "  -> FAILED to add to Preview Scene\n";
+			}
+		} else {
+			debugInfo += "  -> FAILED: Preview source is not a valid scene\n";
+		}
+		obs_source_release(preview_scene);
+	} else {
+		debugInfo += "\nPreview Scene is NULL!\n";
+	}
+
+	// Dump base scenes
+	struct obs_frontend_source_list scenes = {0};
+	obs_frontend_get_scenes(&scenes);
+	debugInfo += QString("\nBase Scenes Count: %1\n").arg(scenes.sources.num);
+	for (size_t i = 0; i < scenes.sources.num; i++) {
+		obs_source_t *base_scene = scenes.sources.array[i];
+		inject_into_scene(base_scene, globalSource);
+	}
+	obs_frontend_source_list_free(&scenes);
+
+	QMessageBox::information(this, "Test Card 0.4.7 DEBUG", debugInfo);
+	blog(LOG_INFO, "[TestCardDock] Test card ON");
 }
 
-void TestCardDock::removeFromCurrentScene()
+void TestCardDock::deactivateTestCard()
 {
-	obs_source_t *scene = obs_frontend_get_current_scene();
-	if (!scene) {
-		return;
+	if (globalSource) {
+		// 1. Disable the source globally
+		obs_source_set_enabled(globalSource, false);
 	}
 
-	obs_scene_t *obs_scene = obs_scene_from_source(scene);
-	if (obs_scene) {
-		obs_sceneitem_t *item = obs_scene_find_source(obs_scene, obs_source_get_name(globalSource));
-		if (item) {
-			obs_sceneitem_remove(item);
-			blog(LOG_INFO, "[TestCardDock] Removed test card from scene");
-		}
-	}
+	// 2. Completely obliterate it from all scenes to keep the user's workspace clean
+	cleanupStaleSceneItems();
 
-	obs_source_release(scene);
+	blog(LOG_INFO, "[TestCardDock] Test card OFF → Exterminated from all scenes");
 }
 
-void TestCardDock::removeFromAllScenes()
+// ---------------------------------------------------------------------------
+// Cleanup
+// ---------------------------------------------------------------------------
+
+void TestCardDock::cleanupStaleSceneItems()
 {
 	struct obs_frontend_source_list scenes = {0};
 	obs_frontend_get_scenes(&scenes);
-
 	for (size_t i = 0; i < scenes.sources.num; i++) {
-		obs_source_t *scene_source = scenes.sources.array[i];
-		obs_scene_t *obs_scene = obs_scene_from_source(scene_source);
-		if (obs_scene) {
-			obs_sceneitem_t *item = obs_scene_find_source(obs_scene, obs_source_get_name(globalSource));
-			if (item) {
-				obs_sceneitem_remove(item);
-				blog(LOG_INFO, "[TestCardDock] Removed test card from scene: %s",
-				     obs_source_get_name(scene_source));
-			}
+		obs_scene_t *scene = obs_scene_from_source(scenes.sources.array[i]);
+		if (scene) {
+			obs_scene_enum_items(scene, remove_stale_items_callback, nullptr);
 		}
 	}
-
 	obs_frontend_source_list_free(&scenes);
+
+	obs_enum_all_sources(cleanup_all_sources_callback, nullptr);
 }
 
-void TestCardDock::onFrontendEvent(enum obs_frontend_event event, void *private_data)
+// ---------------------------------------------------------------------------
+// Event Handlers
+// ---------------------------------------------------------------------------
+
+void TestCardDock::onFrontendEvent(enum obs_frontend_event event, void *ptr)
 {
-	TestCardDock *dock = static_cast<TestCardDock *>(private_data);
+	TestCardDock *dock = static_cast<TestCardDock *>(ptr);
 
-	if (event == OBS_FRONTEND_EVENT_SCENE_CHANGED) {
-		// When scene changes, auto-add test card if enabled
-		if (dock->isEnabled) {
-			blog(LOG_INFO, "[TestCardDock] Scene changed, adding test card to new scene");
-			dock->addToCurrentScene();
-		}
-	}
-
-	if (event == OBS_FRONTEND_EVENT_FINISHED_LOADING) {
-		// OBS has finished loading the scene collection.
-		// Apply the saved config text NOW, overriding whatever the scene
-		// collection may have restored (which defaults to "OBS TEST CARD").
+	if (event == OBS_FRONTEND_EVENT_STUDIO_MODE_ENABLED || event == OBS_FRONTEND_EVENT_STUDIO_MODE_DISABLED) {
 		if (!dock->globalSource)
-			return;
+			dock->createGlobalSource();
 
-		char *config_path = obs_module_get_config_path(obs_current_module(), "obs-test-card.json");
-		if (!config_path)
-			return;
-
-		obs_data_t *data = obs_data_create_from_json_file(config_path);
-		bfree(config_path);
-		if (!data)
-			return;
-
-		const char *saved_text = obs_data_get_string(data, "custom_text");
-		if (saved_text && *saved_text) {
-			obs_data_t *src_settings = obs_source_get_settings(dock->globalSource);
-			obs_data_set_string(src_settings, "custom_text", saved_text);
-			obs_source_update(dock->globalSource, src_settings);
-			obs_data_release(src_settings);
-			blog(LOG_INFO, "[TestCardDock] Restored saved text after scene collection load");
+		if (!dock->isEnabled) {
+			dock->cleanupStaleSceneItems();
 		}
-		obs_data_release(data);
 	}
+
+	if (event == OBS_FRONTEND_EVENT_SCENE_COLLECTION_CHANGED) {
+		if (!dock->globalSource)
+			dock->createGlobalSource();
+
+		if (dock->isEnabled) {
+			dock->activateTestCard();
+		} else {
+			dock->cleanupStaleSceneItems();
+		}
+	}
+
+	if (event == OBS_FRONTEND_EVENT_SCENE_CHANGED || event == OBS_FRONTEND_EVENT_PREVIEW_SCENE_CHANGED) {
+		if (dock->isEnabled) {
+			// Ensure it follows the user if they change scenes while ON
+			dock->activateTestCard();
+		}
+	}
+
+	if (event == OBS_FRONTEND_EVENT_SCENE_COLLECTION_CLEANUP) {
+		if (dock->globalSource) {
+			obs_source_release(dock->globalSource);
+			dock->globalSource = nullptr;
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// UI
+// ---------------------------------------------------------------------------
+
+void TestCardDock::onToggleClicked()
+{
+	isEnabled = toggleButton->isChecked();
+
+	if (isEnabled)
+		activateTestCard();
+	else
+		deactivateTestCard();
+
+	updateButtonState();
 }
 
 void TestCardDock::onSettingsClicked()
 {
 	if (!globalSource)
 		return;
-
 	obs_frontend_open_source_properties(globalSource);
 }
 
 void TestCardDock::updateButtonState()
 {
-	if (isEnabled) {
+	if (isEnabled)
 		toggleButton->setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold;");
-	} else {
+	else
 		toggleButton->setStyleSheet("");
-	}
 }

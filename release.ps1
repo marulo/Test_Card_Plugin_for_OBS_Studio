@@ -33,8 +33,7 @@ Select-String "OBS Test Card V\." src/test-source.c | ForEach-Object { Write-Hos
 
 # 3. git add, commit, tag, push
 Write-Host "  Committing..."
-git add buildspec.json src/test-source.c
-git commit -m "Release $Version"
+git commit -a -m "Release $Version"
 git tag $Version
 git push origin master --tags
 
