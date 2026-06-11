@@ -6,7 +6,7 @@
 // ---------------------------------------------------------------------------
 // Aggressive Cleanup Helper (Exterminates by ID)
 // ---------------------------------------------------------------------------
-static bool remove_stale_items_callback(obs_scene_t *scene, obs_sceneitem_t *item, void *param)
+static bool remove_stale_items_callback(obs_scene_t *, obs_sceneitem_t *item, void *param)
 {
 	bool *found_any = (bool *)param;
 	obs_source_t *item_source = obs_sceneitem_get_source(item);
@@ -171,7 +171,7 @@ void TestCardDock::activateTestCard()
 
 	obs_source_set_enabled(globalSource, true);
 
-	blog(LOG_INFO, "DEBUG INFO V0.4.13");
+	blog(LOG_INFO, "%s", "DEBUG INFO V0.4.14");
 
 	obs_source_t *program_scene = obs_frontend_get_current_scene();
 	if (program_scene) {
@@ -182,17 +182,17 @@ void TestCardDock::activateTestCard()
 			if (item) {
 				obs_sceneitem_set_order(item, OBS_ORDER_MOVE_TOP);
 				obs_sceneitem_set_visible(item, true);
-				blog(LOG_INFO, "[TestCardDock]   -> Successfully added to Program Scene!");
+				blog(LOG_INFO, "%s", "[TestCardDock]   -> Successfully added to Program Scene!");
 			} else {
-				blog(LOG_INFO,
+				blog(LOG_INFO, "%s",
 				     "[TestCardDock]   -> FAILED to add to Program Scene (obs_scene_add returned null)");
 			}
 		} else {
-			blog(LOG_INFO, "[TestCardDock]   -> FAILED: Program source is not a valid scene");
+			blog(LOG_INFO, "%s", "[TestCardDock]   -> FAILED: Program source is not a valid scene");
 		}
 		obs_source_release(program_scene);
 	} else {
-		blog(LOG_INFO, "[TestCardDock] Program Scene is NULL!");
+		blog(LOG_INFO, "%s", "[TestCardDock] Program Scene is NULL!");
 	}
 
 	obs_source_t *preview_scene = obs_frontend_get_current_preview_scene();
@@ -204,20 +204,20 @@ void TestCardDock::activateTestCard()
 			if (item) {
 				obs_sceneitem_set_order(item, OBS_ORDER_MOVE_TOP);
 				obs_sceneitem_set_visible(item, true);
-				blog(LOG_INFO, "[TestCardDock]   -> Successfully added to Preview Scene!");
+				blog(LOG_INFO, "%s", "[TestCardDock]   -> Successfully added to Preview Scene!");
 			} else {
-				blog(LOG_INFO, "[TestCardDock]   -> FAILED to add to Preview Scene");
+				blog(LOG_INFO, "%s", "[TestCardDock]   -> FAILED to add to Preview Scene");
 			}
 		} else {
-			blog(LOG_INFO, "[TestCardDock]   -> FAILED: Preview source is not a valid scene");
+			blog(LOG_INFO, "%s", "[TestCardDock]   -> FAILED: Preview source is not a valid scene");
 		}
 		obs_source_release(preview_scene);
 	} else {
-		blog(LOG_INFO, "[TestCardDock] Preview Scene is NULL!");
+		blog(LOG_INFO, "%s", "[TestCardDock] Preview Scene is NULL!");
 	}
 
 	// Dump base scenes
-	struct obs_frontend_source_list scenes = {0};
+	struct obs_frontend_source_list scenes = {};
 	obs_frontend_get_scenes(&scenes);
 	blog(LOG_INFO, "[TestCardDock] Base Scenes Count: %zu", scenes.sources.num);
 	for (size_t i = 0; i < scenes.sources.num; i++) {
@@ -226,7 +226,7 @@ void TestCardDock::activateTestCard()
 	}
 	obs_frontend_source_list_free(&scenes);
 
-	blog(LOG_INFO, "[TestCardDock] Test card ON");
+	blog(LOG_INFO, "%s", "[TestCardDock] Test card ON");
 }
 
 void TestCardDock::deactivateTestCard()
@@ -239,7 +239,7 @@ void TestCardDock::deactivateTestCard()
 	// 2. Completely obliterate it from all scenes to keep the user's workspace clean
 	cleanupStaleSceneItems();
 
-	blog(LOG_INFO, "[TestCardDock] Test card OFF -> Exterminated from all scenes");
+	blog(LOG_INFO, "%s", "[TestCardDock] Test card OFF -> Exterminated from all scenes");
 }
 
 // ---------------------------------------------------------------------------
@@ -248,7 +248,7 @@ void TestCardDock::deactivateTestCard()
 
 void TestCardDock::cleanupStaleSceneItems()
 {
-	struct obs_frontend_source_list scenes = {0};
+	struct obs_frontend_source_list scenes = {};
 	obs_frontend_get_scenes(&scenes);
 	for (size_t i = 0; i < scenes.sources.num; i++) {
 		obs_scene_t *scene = obs_scene_from_source(scenes.sources.array[i]);
