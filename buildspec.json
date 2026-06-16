@@ -38,7 +38,7 @@
     },
     "name": "test-card",
     "displayName": "Test Card",
-    "version": "0.5.0",
+    "version": "0.4.25",
     "author": "marulo",
     "website": "https://github.com/marulo/Test_Card_Plugin_for_OBS_Studio",
     "email": "marulo222@gmail.com"
