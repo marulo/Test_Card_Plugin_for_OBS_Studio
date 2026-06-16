@@ -1018,10 +1018,13 @@ static void test_source_video_render(void *data, gs_effect_t *effect)
 		uint32_t t_w = gs_texture_get_width(src->obs_text_tex);
 		uint32_t t_h = gs_texture_get_height(src->obs_text_tex);
 
+		// Calculate height based on the 30% reduced proportion from earlier
+		float prop_w = min_dim * 0.35f;
+		float scale = prop_w / (float)t_w;
+		float target_h = (float)t_h * scale;
+
 		// Image width exactly matches the project width
 		float target_w = (float)src->width;
-		float scale = target_w / (float)t_w;
-		float target_h = (float)t_h * scale;
 
 		float img_padding = min_dim * 0.01f;
 		float margin_y = (float)src->height * 0.05f;
@@ -1029,8 +1032,8 @@ static void test_source_video_render(void *data, gs_effect_t *effect)
 		float dy = (float)src->height - margin_y - 3.0f - target_h -
 			   img_padding; // Just above the orange border line
 
-		// Scroll left to right
-		float speed = target_w * 0.25f; // Scroll speed (takes 4 seconds to cross)
+		// Scroll left to right (speed is 30% of previous 0.25f -> 0.075f)
+		float speed = target_w * 0.075f;
 		float offset_x = fmodf(src->rotation_time * speed, target_w);
 
 		gs_effect_set_texture(gs_effect_get_param_by_name(default_effect, "image"), src->obs_text_tex);
@@ -1097,7 +1100,7 @@ static obs_properties_t *test_source_get_properties(void *data)
 
 	obs_properties_add_text(props, "custom_text", obs_module_text("TestCard.CustomText"), OBS_TEXT_DEFAULT);
 
-	obs_properties_add_text(props, "version_info", "Test Card Plugin V. 0.4.23 by Marulo", OBS_TEXT_INFO);
+	obs_properties_add_text(props, "version_info", "Test Card Plugin V. 0.4.24 by Marulo", OBS_TEXT_INFO);
 
 	return props;
 }
