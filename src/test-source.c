@@ -387,7 +387,7 @@ static void render_layer_text(struct test_source_data *data)
 	}
 	char res_str[64];
 	sprintf(res_str, "%dx%d", data->width, data->height);
-	const char *title = (data->custom_text[0] != '\0') ? data->custom_text : "OBS TEST CARD";
+	const char *title = (data->custom_text[0] != '\0') ? data->custom_text : "TEST CARD";
 
 	render_text_cached(&data->cache_clock, clock_str, &data->font, font_size);
 	render_text_cached(&data->cache_resolution, res_str, &data->font, font_size);
@@ -643,7 +643,7 @@ static void test_source_update(void *data, obs_data_t *settings)
 
 	const char *new_text = obs_data_get_string(settings, "custom_text");
 	if (!new_text || new_text[0] == '\0')
-		new_text = "OBS TEST CARD";
+		new_text = "TEST CARD";
 	if (strcmp(src->custom_text, new_text) != 0) {
 		strncpy(src->custom_text, new_text, sizeof(src->custom_text) - 1);
 		src->custom_text[sizeof(src->custom_text) - 1] = '\0';
@@ -1073,7 +1073,7 @@ static void test_source_get_defaults(obs_data_t *settings)
 	obs_data_set_default_int(settings, "cell_size", CELL_SIZE);
 	obs_data_set_default_int(settings, "bg_dark_color", 0x502822);
 	obs_data_set_default_int(settings, "bg_light_color", 0x682f25);
-	obs_data_set_default_string(settings, "custom_text", "OBS TEST CARD");
+	obs_data_set_default_string(settings, "custom_text", "TEST CARD");
 }
 
 static obs_properties_t *test_source_get_properties(void *data)
@@ -1087,7 +1087,7 @@ static obs_properties_t *test_source_get_properties(void *data)
 
 	obs_properties_add_text(props, "custom_text", obs_module_text("TestCard.CustomText"), OBS_TEXT_DEFAULT);
 
-	obs_properties_add_text(props, "version_info", "OBS Test Card V. 0.4.17 by Marulo", OBS_TEXT_INFO);
+	obs_properties_add_text(props, "version_info", "Test Card Plugin V. 0.4.18 by Marulo", OBS_TEXT_INFO);
 
 	return props;
 }
