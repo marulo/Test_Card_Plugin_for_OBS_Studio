@@ -1,5 +1,5 @@
 // Test Card Plugin for OBS Studio - Optimized Rewrite
-// High-performance GPU implementation
+// High-performance GPU-accelerated implementation
 
 #include <graphics/effect.h>
 #include <graphics/graphics.h>

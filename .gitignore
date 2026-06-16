@@ -1,3 +1,4 @@
+# Test Card Plugin for OBS Studio
 # Build artifacts
 build/
 *.dll
