@@ -1,4 +1,4 @@
-# release.ps1 - Bump version in buildspec.json and push a new release tag
+# release.ps1 - Test Card Plugin for OBS Studio
 # Usage: .\release.ps1 <version>
 # Example: .\release.ps1 0.2.3
 
