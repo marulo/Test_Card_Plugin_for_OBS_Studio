@@ -33,10 +33,10 @@
     },
     "platformConfig": {
         "macos": {
-            "bundleId": "com.marulo.obs-test-card"
+            "bundleId": "com.marulo.test-card"
         }
     },
-    "name": "obs-test-card",
+    "name": "test-card",
     "displayName": "Test Card",
     "version": "0.4.18",
     "author": "marulo",
