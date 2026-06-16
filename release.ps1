@@ -1,4 +1,4 @@
-# release.ps1 - Bump version across all required files and push a new release tag
+# release.ps1 - Bump version in buildspec.json and push a new release tag
 # Usage: .\release.ps1 <version>
 # Example: .\release.ps1 0.2.3
 
@@ -21,17 +21,10 @@ if ($content -notmatch '"version": "\d+\.\d+\.\d+"') {
 $content = $content -replace '("name": "test-card"[\s\S]*?"version": ")[^"]+(")', "`${1}$Version`${2}"
 Set-Content buildspec.json $content -NoNewline
 
-# 2. src/test-source.c  (version string shown in the plugin UI)
-Write-Host "  Updating src/test-source.c..."
-$content = Get-Content src/test-source.c -Raw
-$content = $content -replace 'Test Card Plugin V\. \d+\.\d+\.\d+', "Test Card Plugin V. $Version"
-Set-Content src/test-source.c $content -NoNewline
-
 Write-Host "  Verifying changes..."
 Select-String "version" buildspec.json | Where-Object { $_.Line -match "test-card|0\." } | ForEach-Object { Write-Host "    buildspec: $($_.Line.Trim())" -ForegroundColor Green }
-Select-String "Test Card Plugin V\." src/test-source.c | ForEach-Object { Write-Host "    test-source.c: $($_.Line.Trim())" -ForegroundColor Green }
 
-# 3. git add, commit, tag, push
+# 2. git add, commit, tag, push
 Write-Host "  Committing..."
 git commit -a -m "Release $Version"
 git tag $Version

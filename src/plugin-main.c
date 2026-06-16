@@ -1,5 +1,5 @@
 /*
-OBS Test Card Plugin
+Test Card Plugin for OBS Studio
 Copyright (C) 2026 Marulo
 
 
@@ -29,13 +29,17 @@ extern struct obs_source_info test_source_info;
 extern void register_test_card_dock(void);
 #endif
 
-bool obs_module_load(void) {
-  obs_register_source(&test_source_info);
+bool obs_module_load(void)
+{
+	obs_register_source(&test_source_info);
 #ifdef ENABLE_QT
-  register_test_card_dock();
+	register_test_card_dock();
 #endif
-  obs_log(LOG_INFO, "plugin loaded successfully (version %s)", PLUGIN_VERSION);
-  return true;
+	obs_log(LOG_INFO, "plugin loaded successfully (version %s)", PLUGIN_VERSION);
+	return true;
 }
 
-void obs_module_unload(void) { obs_log(LOG_INFO, "plugin unloaded"); }
+void obs_module_unload(void)
+{
+	obs_log(LOG_INFO, "plugin unloaded");
+}

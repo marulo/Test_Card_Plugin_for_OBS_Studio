@@ -1,10 +1,11 @@
-// OBS Test Card Plugin - Optimized Rewrite
+// Test Card Plugin for OBS Studio - Optimized Rewrite
 // High-performance GPU implementation
 
 #include <graphics/effect.h>
 #include <graphics/graphics.h>
 #include <graphics/matrix4.h>
 #include <obs-module.h>
+#include <plugin-support.h>
 #include <util/bmem.h>
 #include <util/platform.h>
 
@@ -33,7 +34,7 @@
 /* clang-format on */
 
 #include "logo_png.h"
-#include "obs_logo_png.h"
+#include "banner_png.h"
 
 #define CELL_SIZE 50
 #define DEFAULT_WIDTH 1920
@@ -63,7 +64,7 @@ struct test_source_data {
 	gs_texture_t *tex_white;
 	gs_texture_t *tex_grid;
 	gs_texture_t *logo_tex;
-	gs_texture_t *obs_text_tex;
+	gs_texture_t *banner_tex;
 	gs_texture_t *layer_text;
 
 	// Custom Effects
@@ -103,8 +104,6 @@ struct test_source_data {
 	float h_scan_time;
 	float v_scan_time;
 };
-
-extern obs_module_t *module;
 
 static uint32_t hsv_to_rgb(float h, float s, float v)
 {
@@ -381,12 +380,13 @@ static void render_layer_text(struct test_source_data *data)
 	struct tm *timeinfo = localtime(&now);
 	char clock_str[64];
 	if (timeinfo) {
-		sprintf(clock_str, "%02d:%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+		snprintf(clock_str, sizeof(clock_str), "%02d:%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min,
+			 timeinfo->tm_sec);
 	} else {
 		strcpy(clock_str, "--:--:--");
 	}
 	char res_str[64];
-	sprintf(res_str, "%dx%d", data->width, data->height);
+	snprintf(res_str, sizeof(res_str), "%dx%d", data->width, data->height);
 	const char *title = (data->custom_text[0] != '\0') ? data->custom_text : "TEST CARD";
 
 	render_text_cached(&data->cache_clock, clock_str, &data->font, font_size);
@@ -480,6 +480,7 @@ static void draw_solid_rect(gs_effect_t *effect, gs_texture_t *white_tex, float 
 	gs_effect_set_vec4(color_param, &v_color);
 
 	gs_technique_t *tech = gs_effect_get_technique(effect, "Solid");
+	gs_technique_begin(tech);
 	gs_technique_begin_pass(tech, 0);
 
 	gs_matrix_push();
@@ -489,6 +490,7 @@ static void draw_solid_rect(gs_effect_t *effect, gs_texture_t *white_tex, float 
 	gs_matrix_pop();
 
 	gs_technique_end_pass(tech);
+	gs_technique_end(tech);
 }
 
 static const char *point_effect_code =
@@ -540,7 +542,7 @@ static void *test_source_create(obs_data_t *settings, obs_source_t *source)
 	char *errors = NULL;
 	data->point_effect = gs_effect_create(point_effect_code, "point_effect", &errors);
 	if (errors) {
-		blog(LOG_WARNING, "[obs-test-card] Error compiling point_effect: %s", errors);
+		blog(LOG_WARNING, "[test-card] Error compiling point_effect: %s", errors);
 		bfree(errors);
 	}
 
@@ -559,10 +561,10 @@ static void *test_source_create(obs_data_t *settings, obs_source_t *source)
 		stbi_image_free(pixels);
 	}
 
-	pixels = stbi_load_from_memory(obs_logo_png, (int)obs_logo_png_len, &img_w, &img_h, &img_c, 4);
+	pixels = stbi_load_from_memory(banner_png, (int)banner_png_len, &img_w, &img_h, &img_c, 4);
 	if (pixels) {
 		const uint8_t *ptr = pixels;
-		data->obs_text_tex = gs_texture_create((uint32_t)img_w, (uint32_t)img_h, GS_RGBA, 1, &ptr, 0);
+		data->banner_tex = gs_texture_create((uint32_t)img_w, (uint32_t)img_h, GS_RGBA, 1, &ptr, 0);
 		stbi_image_free(pixels);
 	}
 	obs_leave_graphics();
@@ -610,8 +612,8 @@ static void test_source_destroy(void *data)
 		gs_effect_destroy(src->point_effect);
 	if (src->logo_tex)
 		gs_texture_destroy(src->logo_tex);
-	if (src->obs_text_tex)
-		gs_texture_destroy(src->obs_text_tex);
+	if (src->banner_tex)
+		gs_texture_destroy(src->banner_tex);
 	obs_leave_graphics();
 
 	bfree(data);
@@ -664,7 +666,7 @@ static void test_source_update(void *data, obs_data_t *settings)
 	 * on startup before we've had a chance to restore them. */
 	if (src->config_loaded && (src->dirty || old_dark != src->bg_dark_color || old_light != src->bg_light_color ||
 				   old_cell_size != src->cell_size)) {
-		char *config_path = obs_module_get_config_path(obs_current_module(), "obs-test-card.json");
+		char *config_path = obs_module_get_config_path(obs_current_module(), "test-card.json");
 		if (config_path) {
 			char *dir = bstrdup(config_path);
 			char *sep = strrchr(dir, '/');
@@ -697,7 +699,7 @@ static void test_source_video_tick(void *data, float seconds)
 	 * no race with the deferred-update mechanism. */
 	if (!src->config_loaded) {
 		src->config_loaded = true;
-		char *cfg = obs_module_get_config_path(obs_current_module(), "obs-test-card.json");
+		char *cfg = obs_module_get_config_path(obs_current_module(), "test-card.json");
 		if (cfg) {
 			obs_data_t *d = obs_data_create_from_json_file(cfg);
 			bfree(cfg);
@@ -965,8 +967,8 @@ static void test_source_video_render(void *data, gs_effect_t *effect)
 		float scale = (min_dim * 0.5f) / (float)tex_h;
 		final_logo_w = (float)tex_w * scale;
 	}
-	// Multiplicamos por 0.9 para quitar el margen transparente del PNG
-	// y que los bordes rectos queden perfectamente ocultos detras del circulo blanco.
+	// Scale by 0.9 to trim the transparent PNG margin so the straight
+	// edges are perfectly hidden behind the white circle.
 	int rect_width = (int)(final_logo_w * 0.9f);
 	int rect_left = ((int)src->width - rect_width) / 2;
 	int rect_top = 0;
@@ -1013,41 +1015,40 @@ static void test_source_video_render(void *data, gs_effect_t *effect)
 		gs_matrix_pop();
 	}
 
-	// Second Logo (OBS_LOGO.png)
-	if (src->obs_text_tex) {
-		uint32_t t_w = gs_texture_get_width(src->obs_text_tex);
-		uint32_t t_h = gs_texture_get_height(src->obs_text_tex);
+	// Scrolling banner
+	if (src->banner_tex) {
+		uint32_t t_w = gs_texture_get_width(src->banner_tex);
+		uint32_t t_h = gs_texture_get_height(src->banner_tex);
 
-		// Calculate height based on the 30% reduced proportion from earlier
+		// Height scaled by a fixed proportion of the smaller dimension
 		float prop_w = min_dim * 0.35f;
 		float scale = prop_w / (float)t_w;
 		float target_h = (float)t_h * scale;
 
-		// Image width exactly matches the project width
+		// Width spans the full project width
 		float target_w = (float)src->width;
 
 		float img_padding = min_dim * 0.01f;
 		float margin_y = (float)src->height * 0.05f;
 
-		float dy = (float)src->height - margin_y - 3.0f - target_h -
-			   img_padding; // Just above the orange border line
+		float dy = (float)src->height - margin_y - 3.0f - target_h - img_padding; // Just above the border line
 
-		// Scroll left to right (speed is 30% of previous 0.25f -> 0.075f)
+		// Continuous horizontal scroll
 		float speed = target_w * 0.075f;
 		float offset_x = fmodf(src->rotation_time * speed, target_w);
 
-		gs_effect_set_texture(gs_effect_get_param_by_name(default_effect, "image"), src->obs_text_tex);
+		gs_effect_set_texture(gs_effect_get_param_by_name(default_effect, "image"), src->banner_tex);
 		gs_technique_begin_pass(tech_def, 0);
 
-		// Draw exactly two instances for a perfect loop
+		// Draw two copies for a seamless loop
 		gs_matrix_push();
 		gs_matrix_translate3f(offset_x, dy, 0.0f);
-		gs_draw_sprite(src->obs_text_tex, 0, (uint32_t)target_w, (uint32_t)target_h);
+		gs_draw_sprite(src->banner_tex, 0, (uint32_t)target_w, (uint32_t)target_h);
 		gs_matrix_pop();
 
 		gs_matrix_push();
 		gs_matrix_translate3f(offset_x - target_w, dy, 0.0f);
-		gs_draw_sprite(src->obs_text_tex, 0, (uint32_t)target_w, (uint32_t)target_h);
+		gs_draw_sprite(src->banner_tex, 0, (uint32_t)target_w, (uint32_t)target_h);
 		gs_matrix_pop();
 
 		gs_technique_end_pass(tech_def);
@@ -1100,7 +1101,9 @@ static obs_properties_t *test_source_get_properties(void *data)
 
 	obs_properties_add_text(props, "custom_text", obs_module_text("TestCard.CustomText"), OBS_TEXT_DEFAULT);
 
-	obs_properties_add_text(props, "version_info", "Test Card Plugin V. 0.4.24 by Marulo", OBS_TEXT_INFO);
+	char version_str[128];
+	snprintf(version_str, sizeof(version_str), "Test Card Plugin V. %s by Marulo", PLUGIN_VERSION);
+	obs_properties_add_text(props, "version_info", version_str, OBS_TEXT_INFO);
 
 	return props;
 }

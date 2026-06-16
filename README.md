@@ -39,8 +39,8 @@ This plugin allows you to quickly toggle a customizable test pattern on your OBS
 
 ### Build instructions
 ```bash
-git clone https://github.com/marulo/OBS_Test_Card.git
-cd OBS_Test_Card
+git clone https://github.com/marulo/Test_Card_Plugin_for_OBS_Studio.git
+cd Test_Card_Plugin_for_OBS_Studio
 cmake --preset windows-x64  # Or macOS / linux preset
 cmake --build --preset windows-x64
 ```

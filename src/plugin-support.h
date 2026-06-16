@@ -1,5 +1,5 @@
 /*
-OBS Test Card Plugin
+Test Card Plugin for OBS Studio
 Copyright (C) 2026 Marulo
 
 
