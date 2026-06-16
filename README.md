@@ -2,8 +2,6 @@
 
 A professional broadcasting test card generator for OBS Studio.
 
-> **Disclaimer:** Parts of this plugin's code and documentation were generated with the assistance of AI coding tools, and have been thoroughly reviewed and tested.
-
 This plugin allows you to quickly toggle a customizable test pattern on your OBS output, perfect for calibrating streams, checking aspect ratios, or simply displaying a professional standby screen without consuming excessive CPU/GPU resources.
 
 ## ✨ Features
@@ -50,3 +48,5 @@ If you find any issues or have suggestions, please open an issue in this reposit
 
 ## 📄 License
 This project is licensed under the GNU General Public License v2.0.
+
+> **Disclaimer:** Parts of this plugin's code and documentation were generated with the assistance of AI coding tools, and have been thoroughly reviewed and tested.
