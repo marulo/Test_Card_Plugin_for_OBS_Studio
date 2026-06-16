@@ -1018,26 +1018,34 @@ static void test_source_video_render(void *data, gs_effect_t *effect)
 		uint32_t t_w = gs_texture_get_width(src->obs_text_tex);
 		uint32_t t_h = gs_texture_get_height(src->obs_text_tex);
 
-		float target_w = min_dim * 0.5f; // Match spinning logo width
+		// The proportion that defines its width is 30% less than 0.5f -> 0.35f
+		float target_w = min_dim * 0.35f;
 		float scale = target_w / (float)t_w;
 		float target_h = (float)t_h * scale;
 
 		float img_padding = min_dim * 0.01f;
 		float margin_y = (float)src->height * 0.05f;
 
-		float dx = ((float)src->width - target_w) / 2.0f;
 		float dy = (float)src->height - margin_y - 3.0f - target_h -
 			   img_padding; // Just above the orange border line
 
-		gs_matrix_push();
-		gs_matrix_translate3f(dx, dy, 0.0f);
+		// Scroll left to right
+		float speed = target_w * 0.5f; // Scroll speed relative to its width
+		float offset_x = fmodf(src->rotation_time * speed, target_w);
 
 		gs_effect_set_texture(gs_effect_get_param_by_name(default_effect, "image"), src->obs_text_tex);
 		gs_technique_begin_pass(tech_def, 0);
-		gs_draw_sprite(src->obs_text_tex, 0, (uint32_t)target_w, (uint32_t)target_h);
-		gs_technique_end_pass(tech_def);
 
-		gs_matrix_pop();
+		// Draw repeating instances across the whole width
+		float start_x = offset_x - target_w;
+		for (float x = start_x; x < (float)src->width; x += target_w) {
+			gs_matrix_push();
+			gs_matrix_translate3f(x, dy, 0.0f);
+			gs_draw_sprite(src->obs_text_tex, 0, (uint32_t)target_w, (uint32_t)target_h);
+			gs_matrix_pop();
+		}
+
+		gs_technique_end_pass(tech_def);
 	}
 
 	// Text
@@ -1087,7 +1095,7 @@ static obs_properties_t *test_source_get_properties(void *data)
 
 	obs_properties_add_text(props, "custom_text", obs_module_text("TestCard.CustomText"), OBS_TEXT_DEFAULT);
 
-	obs_properties_add_text(props, "version_info", "Test Card Plugin V. 0.4.21 by Marulo", OBS_TEXT_INFO);
+	obs_properties_add_text(props, "version_info", "Test Card Plugin V. 0.4.22 by Marulo", OBS_TEXT_INFO);
 
 	return props;
 }
