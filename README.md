@@ -16,9 +16,26 @@ This plugin allows you to quickly toggle a customizable test pattern on your OBS
 
 1. Go to the [Releases](../../releases/latest) page.
 2. Download the installer for your platform:
-   - **Windows:** Download and run the `.exe` installer.
-   - **macOS:** Download and run the `.pkg` installer.
-   - **Linux:** Download the `.zip` or `.deb` depending on your distro.
+
+### Windows
+Download and run the `.exe` installer.
+
+### macOS
+Download and run the `.pkg` installer.
+
+### Linux
+
+#### Option A: .deb installer (Ubuntu/Debian)
+```bash
+sudo apt install ./test-card-*.deb
+```
+
+#### Option B: Portable tarball (any distro)
+```bash
+mkdir -p ~/.config/obs-studio/plugins/
+tar -xzf test-card-*-linux-x86_64.tar.gz -C ~/.config/obs-studio/plugins/
+```
+
 3. Restart OBS Studio.
 
 ## ⚙️ How to use

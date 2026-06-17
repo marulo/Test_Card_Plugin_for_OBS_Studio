@@ -156,10 +156,42 @@ ${_usage_host:-}"
   popd
 
   if (( package )) {
-    log_group "Packaging ${product_name}..."
+    log_group "Packaging ${product_name} (.deb)..."
     pushd ${project_root}
     cmake --build build_${target##*-} --config ${config} -t package ${cmake_args}
     popd
+
+    log_group "Creating portable tarball for ${product_name}..."
+    local tarball_name="${product_name}-${product_version}-linux-x86_64"
+    local tarball_dir="${project_root}/release/${product_name}"
+    local build_release="${project_root}/release/${config}"
+
+    rm -rf "${tarball_dir}"
+    mkdir -p "${tarball_dir}/bin/64bit"
+    mkdir -p "${tarball_dir}/data"
+
+    # Copy the compiled .so from the installed location
+    local so_file=$(find "${build_release}" -name "${product_name}.so" -type f 2>/dev/null | head -1)
+    if [[ -n "${so_file}" ]] {
+      cp "${so_file}" "${tarball_dir}/bin/64bit/"
+    } else {
+      log_error "Could not find ${product_name}.so in ${build_release}"
+      return 2
+    }
+
+    # Copy data resources (locale, etc.)
+    local data_src=$(find "${build_release}" -path "*/obs-plugins/${product_name}" -type d 2>/dev/null | head -1)
+    if [[ -n "${data_src}" ]] {
+      cp -r "${data_src}/"* "${tarball_dir}/data/"
+    } else if [[ -d "${project_root}/data" ]] {
+      cp -r "${project_root}/data/"* "${tarball_dir}/data/"
+    }
+
+    pushd ${project_root}/release
+    tar -czf "${tarball_name}.tar.gz" "${product_name}"
+    popd
+
+    rm -rf "${tarball_dir}"
   } else {
     log_group "Archiving ${product_name}..."
     local output_name="${product_name}-${product_version}-${target##*-}-ubuntu-gnu"
