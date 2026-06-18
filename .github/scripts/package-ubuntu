@@ -170,8 +170,9 @@ ${_usage_host:-}"
     mkdir -p "${tarball_dir}/bin/64bit"
     mkdir -p "${tarball_dir}/data"
 
-    # Copy the compiled .so from the installed location
-    local so_file=$(find "${build_release}" -name "${product_name}.so" -type f 2>/dev/null | head -1)
+    # Copy the compiled .so from the installed lib directory
+    local so_file
+    so_file=$(find "${build_release}" -name "${product_name}.so" -type f 2>/dev/null | head -1)
     if [[ -n "${so_file}" ]] {
       cp "${so_file}" "${tarball_dir}/bin/64bit/"
     } else {
@@ -180,10 +181,11 @@ ${_usage_host:-}"
     }
 
     # Copy data resources (locale, etc.)
-    local data_src=$(find "${build_release}" -path "*/obs-plugins/${product_name}" -type d 2>/dev/null | head -1)
+    local data_src
+    data_src=$(find "${build_release}" -path "*/obs-plugins/${product_name}" -type d 2>/dev/null | head -1)
     if [[ -n "${data_src}" ]] {
       cp -r "${data_src}/"* "${tarball_dir}/data/"
-    } else if [[ -d "${project_root}/data" ]] {
+    } elif [[ -d "${project_root}/data" ]] {
       cp -r "${project_root}/data/"* "${tarball_dir}/data/"
     }
 
