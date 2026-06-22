@@ -4,6 +4,8 @@ A professional broadcasting test card generator for OBS Studio.
 
 This plugin allows you to quickly toggle a customizable test pattern on your OBS output, perfect for calibrating streams, checking aspect ratios, or simply displaying a professional standby screen without consuming excessive CPU/GPU resources.
 
+![Test Card Output](assets/test-card-open.jpg)
+
 ## ✨ Features
 * **Global Toggle:** Turn the test card on/off from the `Tools -> Test Card Control` menu.
 * **Studio Mode Support:** Fully supports Studio Mode. It automatically injects into the active preview or program outputs appropriately, even when using "Duplicate Scene" mode.
@@ -42,9 +44,11 @@ tar -xzf test-card-*-linux-x86_64.tar.gz -C ~/.config/obs-studio/plugins/
 ## ⚙️ How to use
 
 1. Go to the top menu: **Tools -> Test Card Control**.
+   <br>![Menu Location](assets/test-card-location.jpg)
 2. A dockable window will appear. You can dock it into your OBS UI.
 3. Click the big **"TEST CARD"** button to activate/deactivate the test pattern over your current output.
 4. Click **"Config"** to change colors, grid size, and custom text.
+   <br>![Configuration Window](assets/test-card-config.jpg)
 
 ## 🛠️ Building from source
 
