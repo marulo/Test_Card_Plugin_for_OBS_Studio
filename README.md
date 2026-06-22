@@ -35,6 +35,7 @@ sudo apt install ./test-card-*.deb
 mkdir -p ~/.config/obs-studio/plugins/
 tar -xzf test-card-*-linux-x86_64.tar.gz -C ~/.config/obs-studio/plugins/
 ```
+*Note for updates: When updating to a new version using the portable tarball, it is recommended to delete the old plugin folder first (`rm -rf ~/.config/obs-studio/plugins/test-card`) before extracting the new one.*
 
 3. Restart OBS Studio.
 
